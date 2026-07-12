@@ -1,0 +1,49 @@
+name: Collect & Deploy
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # every hour
+  workflow_dispatch:       # allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Collect data
+        run: python collector.py --once
+
+      - name: Generate dashboard
+        run: python generate_dashboard.py
+        env:
+          GOOGLE_MAPS_KEY: ${{ secrets.GOOGLE_MAPS_KEY }}
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add jerufun.db index.html
+          # If DB was already committed before, amend; otherwise create new commit
+          if git log --oneline -- jerufun.db | grep -q .; then
+            git commit --amend --no-edit
+            git push --force
+          else
+            git commit -m "data: initial database and dashboard"
+            git push
+          fi
