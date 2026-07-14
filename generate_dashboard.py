@@ -431,7 +431,7 @@ body{font-family:var(--font);background:var(--canvas);color:var(--body);
 <section class="sec" id="station-sec">
   <h2 class="sec-title">🔍 כמות אופניים בתחנה לאורך זמן</h2>
   <div class="card">
-    <div class="info-btn">i<span class="tip">ממוצע יומי של אופניים זמינים (חשמלי ורגיל בנפרד) בתחנה הנבחרת. הממוצע מחושב על כל המדידות שנאספו באותו יום (פעם בשעה), ולכן עשוי להיות מספר עשרוני. תחנה עם ממוצע של 0.3 למשל — פירושה שרוב היום הייתה ריקה, אך לזמן קצר היה בה אופניים בודד.</span></div>
+    <div class="info-btn">i<span class="tip">ממוצע יומי של אופניים זמינים (חשמלי ורגיל בנפרד) בתחנה הנבחרת. הממוצע מחושב על כל המדידות שנאספו באותו יום (כל 15 דקות), ולכן עשוי להיות מספר עשרוני. תחנה עם ממוצע של 0.3 למשל — פירושה שרוב היום הייתה ריקה, אך לזמן קצר היה בה אופניים בודד.</span></div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">
       <label style="font-weight:600;white-space:nowrap;font-size:13px">בחר תחנה:</label>
       <div id="sta-sel-wrap">
@@ -492,7 +492,7 @@ body{font-family:var(--font);background:var(--canvas);color:var(--body);
 <section class="sec" id="trend-dis">
   <h2 class="sec-title">⚠️ טרנד אופניים תקולים לאורך זמן</h2>
   <div class="card">
-    <div class="info-btn">i<span class="tip">סך האופניים התקולים ברשת כולה. הערך היומי הוא ממוצע כל המדידות שנאספו באותו יום (פעם בשעה) — לכן הוא עשוי להיות מספר עשרוני. למשל, אם בשעה אחת היו 200 תקולים ובשעה אחרת 220, הממוצע היומי יהיה 210.</span></div>
+    <div class="info-btn">i<span class="tip">סך האופניים התקולים ברשת כולה. הערך היומי הוא ממוצע כל המדידות שנאספו באותו יום (כל 15 דקות) — לכן הוא עשוי להיות מספר עשרוני. למשל, אם בשעה אחת היו 200 תקולים ובשעה אחרת 220, הממוצע היומי יהיה 210.</span></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="card-title" style="margin-bottom:0"></div>
       <div class="toggle-group" id="gran-dis">
@@ -509,7 +509,7 @@ body{font-family:var(--font);background:var(--canvas);color:var(--body);
 <section class="sec" id="trend-empty">
   <h2 class="sec-title">🔴 טרנד תחנות ריקות לאורך זמן</h2>
   <div class="card">
-    <div class="info-btn">i<span class="tip">מספר התחנות שהיו ריקות לחלוטין (0 אופניים) או ללא אופניים חשמליים בכל יום. הערך היומי הוא ממוצע כל המדידות שנאספו באותו יום (פעם בשעה), ולכן עשוי להיות מספר עשרוני.</span></div>
+    <div class="info-btn">i<span class="tip">מספר התחנות שהיו ריקות לחלוטין (0 אופניים) או ללא אופניים חשמליים בכל יום. הערך היומי הוא ממוצע כל המדידות שנאספו באותו יום (כל 15 דקות), ולכן עשוי להיות מספר עשרוני.</span></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="card-title" style="margin-bottom:0"></div>
       <div class="toggle-group" id="gran-empty">
@@ -579,7 +579,7 @@ body{font-family:var(--font);background:var(--canvas);color:var(--body);
 <section class="sec" id="trend-avg">
   <h2 class="sec-title">📉ממוצע/חציון אופניים לתחנה לאורך זמן</h2>
   <div class="card">
-    <div class="info-btn">i<span class="tip">ממוצע וחציון של מספר האופניים הזמינים לתחנה ביום נתון. לכל תחנה מחושב ממוצע יומי (מכלל המדידות כל שעה), ואז לוקחים ממוצע וחציון על פני כל התחנות. החציון פחות מושפע מתחנות קיצוניות (ריקות/מלאות).</span></div>
+    <div class="info-btn">i<span class="tip">ממוצע וחציון של מספר האופניים הזמינים לתחנה ביום נתון. לכל תחנה מחושב ממוצע יומי (מכלל המדידות (כל 15 דקות), ואז לוקחים ממוצע וחציון על פני כל התחנות. החציון פחות מושפע מתחנות קיצוניות (ריקות/מלאות).</span></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="card-title" style="margin-bottom:0"></div>
       <div class="toggle-group" id="gran-avg">
