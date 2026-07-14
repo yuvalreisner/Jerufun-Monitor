@@ -1358,6 +1358,7 @@ function renderRides(gran) {
   };
   base.plugins.tooltip = {
     rtl:true, bodyAlign:'right', titleAlign:'right',
+    itemSort: (a, b) => b.datasetIndex - a.datasetIndex,
     callbacks: { label: ctx => ' ' + ctx.parsed.y + ' נסיעות ' + ctx.dataset.label }
   };
   base.layout = { padding: { top: 10 } };
