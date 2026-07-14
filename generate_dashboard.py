@@ -715,7 +715,8 @@ function buildHistCharts(filter) {
       datasets: [{data: h.counts, backgroundColor: BUCKET_COLORS, borderRadius:4}]
     },
     options: {
-      responsive:true, layout:{padding:{top:48}},
+      responsive:true,
+    layout:{padding:{top:30}}, layout:{padding:{top:48}},
       plugins:{
         legend:{display:false},
         datalabels:{
@@ -758,7 +759,8 @@ function buildHistCharts(filter) {
       }]
     },
     options:{
-      responsive:true, layout:{padding:{top:10,right:20}},
+      responsive:true,
+    layout:{padding:{top:30}}, layout:{padding:{top:10,right:20}},
       clip: false,
       plugins:{
         legend:{display:false},
@@ -1156,6 +1158,7 @@ function renderChronic() {
     options:{
       indexAxis:'y',
       responsive:true,
+    layout:{padding:{top:30}},
       maintainAspectRatio:false,
       plugins:{
         legend:{display:false},
@@ -1235,6 +1238,7 @@ function renderTrendDis(gran) {
 function trendOpts(yLabel) {
   return {
     responsive:true,
+    layout:{padding:{top:30}},
     interaction:{mode:'index',intersect:false},
     plugins:{
       legend:{rtl:true, position:'bottom',labels:{font:{size:13,family:"'IBM Plex Sans',sans-serif"},
@@ -1328,6 +1332,7 @@ function renderRides(gran) {
   const labels = rows.map(r => r.date);
   if (ridesChart) ridesChart.destroy();
   const base = trendOpts('נסיעות');
+  base.scales.y.suggestedMax = 20;
   // override datalabels: bold above bars only; lines use anchor:end align:top
   // show label on the topmost VISIBLE dataset; sum all visible for the number
   base.plugins.datalabels = {
@@ -1456,6 +1461,7 @@ function renderStation(name, gran) {
     },
     options:{
       responsive:true,
+    layout:{padding:{top:30}},
       interaction:{mode:'index',intersect:false},
       plugins:{
         legend:{position:'bottom',labels:{font:{size:12}}},
