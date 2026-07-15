@@ -309,14 +309,12 @@ def get_daily_rides() -> pd.DataFrame:
     conn = get_conn()
     df = pd.read_sql_query(f"""
         WITH ordered AS (
-            SELECT s.station_name, s.ts, s.bikes_electric, s.bikes_regular,
-                   LAG(s.bikes_electric) OVER (PARTITION BY s.station_name ORDER BY s.ts) AS prev_elec,
-                   LAG(s.bikes_regular)  OVER (PARTITION BY s.station_name ORDER BY s.ts) AS prev_reg,
-                   LAG(s.ts)             OVER (PARTITION BY s.station_name ORDER BY s.ts) AS prev_ts,
-                   COALESCE(sm.is_shabbat_station, 0) AS is_shabbat
-            FROM snapshots s
-            LEFT JOIN station_meta sm ON s.station_id = sm.station_id
-            WHERE s.station_name NOT IN ({_BL_SQL})
+            SELECT station_name, ts, bikes_electric, bikes_regular,
+                   LAG(bikes_electric) OVER (PARTITION BY station_name ORDER BY ts) AS prev_elec,
+                   LAG(bikes_regular)  OVER (PARTITION BY station_name ORDER BY ts) AS prev_reg,
+                   LAG(ts)             OVER (PARTITION BY station_name ORDER BY ts) AS prev_ts
+            FROM snapshots
+            WHERE station_name NOT IN ({_BL_SQL})
         ),
         deltas AS (
             SELECT ts,
@@ -325,7 +323,7 @@ def get_daily_rides() -> pd.DataFrame:
                           AND bikes_electric < prev_elec
                           AND (prev_elec - bikes_electric) <= 5
                           AND (
-                               is_shabbat = 1
+                               station_name IN ({_SHAB_SQL})
                                OR (
                                  STRFTIME('%w', ts) != '6'
                                  AND NOT (STRFTIME('%w', ts) = '5'
