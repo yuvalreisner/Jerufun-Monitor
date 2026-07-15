@@ -32,14 +32,21 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_station ON snapshots(station_id, ts);
         CREATE TABLE IF NOT EXISTS station_meta (
             station_id  TEXT PRIMARY KEY,
-            address     TEXT DEFAULT ''
+            address     TEXT DEFAULT '',
+            is_shabbat_station INTEGER DEFAULT 0
         );
     """)
     conn.commit()
+    # add column for existing DBs (ignore if already exists)
+    try:
+        conn.execute("ALTER TABLE station_meta ADD COLUMN is_shabbat_station INTEGER DEFAULT 0")
+        conn.commit()
+    except Exception:
+        pass
     conn.close()
 
 
-def insert_snapshots(rows: list[dict]):
+def insert_snapshots(rows: list):
     conn = get_conn()
     conn.executemany("""
         INSERT INTO snapshots
@@ -275,6 +282,16 @@ def upsert_station_address(station_id: str, address: str):
     conn.close()
 
 
+def upsert_station_shabbat(station_id: str, is_shabbat: bool):
+    conn = get_conn()
+    conn.execute("""
+        INSERT INTO station_meta (station_id, is_shabbat_station) VALUES (?, ?)
+        ON CONFLICT(station_id) DO UPDATE SET is_shabbat_station = excluded.is_shabbat_station
+    """, (station_id, 1 if is_shabbat else 0))
+    conn.commit()
+    conn.close()
+
+
 def get_all_station_addresses() -> dict:
     conn = get_conn()
     rows = conn.execute("SELECT station_id, address FROM station_meta").fetchall()
@@ -292,12 +309,14 @@ def get_daily_rides() -> pd.DataFrame:
     conn = get_conn()
     df = pd.read_sql_query(f"""
         WITH ordered AS (
-            SELECT station_name, ts, bikes_electric, bikes_regular,
-                   LAG(bikes_electric) OVER (PARTITION BY station_name ORDER BY ts) AS prev_elec,
-                   LAG(bikes_regular)  OVER (PARTITION BY station_name ORDER BY ts) AS prev_reg,
-                   LAG(ts)             OVER (PARTITION BY station_name ORDER BY ts) AS prev_ts
-            FROM snapshots
-            WHERE station_name NOT IN ({_BL_SQL})
+            SELECT s.station_name, s.ts, s.bikes_electric, s.bikes_regular,
+                   LAG(s.bikes_electric) OVER (PARTITION BY s.station_name ORDER BY s.ts) AS prev_elec,
+                   LAG(s.bikes_regular)  OVER (PARTITION BY s.station_name ORDER BY s.ts) AS prev_reg,
+                   LAG(s.ts)             OVER (PARTITION BY s.station_name ORDER BY s.ts) AS prev_ts,
+                   COALESCE(sm.is_shabbat_station, 0) AS is_shabbat
+            FROM snapshots s
+            LEFT JOIN station_meta sm ON s.station_id = sm.station_id
+            WHERE s.station_name NOT IN ({_BL_SQL})
         ),
         deltas AS (
             SELECT ts,
@@ -306,7 +325,7 @@ def get_daily_rides() -> pd.DataFrame:
                           AND bikes_electric < prev_elec
                           AND (prev_elec - bikes_electric) <= 5
                           AND (
-                               station_name IN ({_SHAB_SQL})
+                               is_shabbat = 1
                                OR (
                                  STRFTIME('%w', ts) != '6'
                                  AND NOT (STRFTIME('%w', ts) = '5'

@@ -6,14 +6,14 @@ Run standalone:  python collector.py
 import logging
 import time
 from datetime import datetime
-from zoneinfo import ZoneInfo
+import pytz
 
 import requests
 
-IL_TZ = ZoneInfo("Asia/Jerusalem")
+IL_TZ = pytz.timezone("Asia/Jerusalem")
 
 from config import MAP_URL, STATION_URL, BIKE_TYPES, POLL_INTERVAL_MINUTES
-from db import init_db, insert_snapshots, upsert_station_address
+from db import init_db, insert_snapshots, upsert_station_address, upsert_station_shabbat
 
 logging.basicConfig(
     level=logging.INFO,
@@ -45,6 +45,7 @@ def collect_once() -> int:
 
     for s in stations:
         station_id = s["id"]
+        upsert_station_shabbat(station_id, s.get("isShabbatStation", False))
         regular = 0
         electric = 0
         docks_free = 0
@@ -55,7 +56,8 @@ def collect_once() -> int:
             try:
                 detail = fetch_station_detail(station_id)
                 docks_free = detail.get("availableOmniPoles", 0)
-                if addr := detail.get("address", ""):
+                addr = detail.get("address", "")
+                if addr:
                     upsert_station_address(station_id, addr)
                 for b in detail.get("availableBikes", []):
                     kind = BIKE_TYPES.get(b["bikeType"], "unknown")
