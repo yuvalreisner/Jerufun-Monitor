@@ -1,0 +1,1627 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ירופאן — הצעת עיצוב חדשה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#12151c;
+    --ink-2:#1a1f29;
+    --ink-3:#232936;
+    --parchment:#f1ece1;
+    --parchment-2:#e8e1d2;
+    --parchment-3:#ddd4bf;
+    --gold:#c99a44;
+    --gold-soft:#e0b96b;
+    --red:#c1443b;
+    --red-soft:#e07971;
+    --teal:#2e7d74;
+    --teal-soft:#5fa89f;
+    --slate:#5b6472;
+
+    --bg: var(--parchment);
+    --bg-panel: #ffffff;
+    --bg-panel-2: #faf7f0;
+    --border: rgba(18,21,28,0.09);
+    --border-strong: rgba(18,21,28,0.16);
+    --text: #1c1f26;
+    --text-dim: #5b6472;
+    --text-faint: #8a8f99;
+    --shadow: 0 12px 28px -14px rgba(30,20,10,0.22);
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Heebo', sans-serif;
+    transition:background .35s ease, color .35s ease;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3, .display{
+    font-family:'Heebo', Arial, sans-serif;
+  }
+  .num{ font-variant-numeric: tabular-nums; }
+
+  a{color:inherit;}
+  ::selection{ background:var(--gold); color:var(--ink); }
+
+  /* ---------- pulse signature ---------- */
+  .pulse-dot{
+    position:relative;
+    width:10px;height:10px;border-radius:50%;
+    display:inline-block;
+    flex-shrink:0;
+  }
+  .pulse-dot::after{
+    content:"";
+    position:absolute; inset:-6px;
+    border-radius:50%;
+    border:1.5px solid currentColor;
+    opacity:.55;
+    animation:pulse-ring 2.2s cubic-bezier(.4,0,.3,1) infinite;
+  }
+  @keyframes pulse-ring{
+    0%{ transform:scale(.55); opacity:.65; }
+    75%{ transform:scale(1.7); opacity:0; }
+    100%{ opacity:0; }
+  }
+  .pulse-dot.gold{ background:var(--gold); color:var(--gold); }
+  .pulse-dot.red{ background:var(--red); color:var(--red); }
+  .pulse-dot.teal{ background:var(--teal); color:var(--teal); }
+  .pulse-dot.slate{ background:var(--text-faint); color:var(--text-faint); }
+  @media (prefers-reduced-motion: reduce){
+    .pulse-dot::after{ animation:none; opacity:.35; }
+  }
+
+  /* ---------- top bar ---------- */
+  header.topbar{
+    position:sticky; top:0; z-index:50;
+    display:flex; align-items:center; justify-content:space-between;
+    flex-wrap:wrap;
+    gap:12px 16px;
+    padding:14px 28px;
+    background:color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border);
+  }
+  .brand{ display:flex; align-items:center; gap:12px; }
+  .brand-mark{
+    width:40px; height:40px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; overflow:hidden;
+    box-shadow:0 2px 8px rgba(0,0,0,0.12);
+  }
+  .brand-mark img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .brand-text h1{
+    font-size:19px; margin:0; font-weight:700; letter-spacing:.2px;
+  }
+  .brand-text span{
+    display:block; font-size:11px; color:var(--text-dim); letter-spacing:.5px;
+    margin-top:1px;
+  }
+
+  .nav-dropdown{ position:relative; flex-shrink:0; }
+  .nav-dropdown-btn{
+    display:flex; align-items:center; gap:6px;
+    background:var(--bg-panel-2); border:1px solid var(--border-strong); border-radius:10px;
+    padding:9px 14px; font-family:'Heebo', Arial, sans-serif; font-size:12.5px; font-weight:600;
+    color:var(--text); cursor:pointer;
+  }
+  .nav-dropdown-btn:hover{ background:var(--border); }
+  .nav-dropdown-btn .chev{ font-size:10px; color:var(--text-faint); transition:transform .15s ease; }
+  .nav-dropdown.open .nav-dropdown-btn .chev{ transform:rotate(180deg); }
+  .nav-dropdown-menu{
+    position:absolute; top:calc(100% + 6px); inset-inline-start:0; z-index:60;
+    min-width:170px; background:var(--bg-panel); border:1px solid var(--border-strong); border-radius:12px;
+    box-shadow:var(--shadow); padding:6px; display:flex; flex-direction:column; gap:2px;
+  }
+  .nav-dropdown-menu a{
+    text-decoration:none; font-size:13px; color:var(--text-dim); padding:9px 12px; border-radius:8px;
+  }
+  .nav-dropdown-menu a:hover{ color:var(--text); background:var(--bg-panel-2); }
+
+  main{ max-width:1240px; margin:0 auto; padding:0 24px 100px; }
+
+  /* ---------- hero pulse strip ---------- */
+  .hero{
+    padding:38px 4px 8px;
+  }
+  .hero-top{ display:flex; align-items:baseline; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-bottom:22px; }
+  .hero-top h2{ font-size:30px; margin:0; font-weight:700; }
+  .hero-eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:12px; color:var(--teal-soft); background:color-mix(in srgb, var(--teal) 16%, transparent);
+    border:1px solid color-mix(in srgb, var(--teal) 45%, transparent);
+    padding:6px 12px; border-radius:999px; margin-bottom:10px;
+  }
+  .hero-note{ color:var(--text-dim); font-size:13px; max-width:520px; line-height:1.7; margin:8px 0 0; }
+
+  .kpi-grid{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:14px;
+  }
+  .kpi.empty{
+    display:flex; align-items:center; justify-content:center;
+    border-style:dashed; border-color:var(--border-strong);
+    box-shadow:none; min-height:112px;
+  }
+  .kpi.empty::before{ display:none; }
+  .kpi.empty .placeholder{ font-size:12.5px; color:var(--text-faint); }
+
+  .kpi.donut{ padding:16px 20px 18px; display:flex; flex-direction:column; align-items:center; }
+  .kpi.donut .donut-title{ align-self:flex-start; font-size:12.5px; color:var(--text-dim); margin-bottom:4px; }
+  .donut-wrap{ position:relative; width:100%; max-width:220px; }
+  .donut-wrap svg{ width:100%; display:block; }
+  .donut-center{
+    position:absolute; left:0; right:0; bottom:6px; text-align:center;
+  }
+  .donut-center .n{ font-family:'Heebo', Arial, sans-serif; font-size:26px; font-weight:800; line-height:1; color:var(--text); }
+  .donut-center .l{ font-size:11px; color:var(--text-dim); margin-top:4px; }
+  .donut-legend{ display:flex; justify-content:space-between; width:100%; max-width:220px; margin-top:2px; direction:ltr; }
+  .donut-legend .leg{ display:flex; align-items:center; gap:5px; font-size:13px; font-weight:700; }
+  .donut-legend .leg.electric{ color:var(--gold); }
+  .donut-legend .leg.regular{ color:var(--teal); }
+  .kpi{
+    background:var(--bg-panel); border:1px solid var(--border);
+    border-radius:18px; padding:20px 22px; position:relative; overflow:hidden;
+    box-shadow:var(--shadow);
+  }
+  .kpi::before{
+    content:""; position:absolute; inset-inline-start:0; top:0; bottom:0; width:3px;
+    background:var(--accent, var(--gold));
+  }
+  .kpi-label{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .kpi-label span.name{ font-size:12.5px; color:var(--text-dim); }
+  .kpi-value{ font-family:'Heebo', Arial, sans-serif; font-size:34px; font-weight:800; line-height:1; }
+  .kpi-sub{ font-size:12px; color:var(--text-faint); margin-top:8px; }
+  .kpi-delta{
+    display:flex; align-items:center; gap:5px;
+    font-size:12px; margin-top:10px; color:var(--text-dim);
+  }
+  .kpi-delta .arrow{ font-size:10px; line-height:1; }
+  .kpi-delta.good{ color:var(--teal); }
+  .kpi-delta.bad{ color:var(--red); }
+  .kpi-delta.neutral{ color:var(--text-faint); }
+  .kpi-delta .value{ font-weight:700; }
+  .kpi-delta .ctx{ color:var(--text-faint); font-weight:400; }
+  .kpi.gold{ --accent: var(--gold); }
+  .kpi.teal{ --accent: var(--teal); }
+  .kpi.red{ --accent: var(--red); }
+  .kpi.slate{ --accent: var(--slate); }
+
+  /* ---------- generic section ---------- */
+  section{ padding:56px 4px 0; scroll-margin-top:90px; }
+  .section-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-bottom:20px; }
+  .section-head h3{ font-size:22px; margin:0 0 6px; font-weight:600; display:flex; align-items:center; gap:10px; }
+  .section-head .num-tag{
+    font-family:'Heebo', Arial, sans-serif; font-size:14px; color:var(--gold);
+    border:1px solid var(--border-strong); border-radius:8px; padding:2px 9px;
+  }
+  .section-head p.hint{ font-size:12.5px; color:var(--text-dim); max-width:640px; line-height:1.7; margin:0; }
+
+  .panel{
+    background:var(--bg-panel); border:1px solid var(--border); border-radius:18px;
+    box-shadow:var(--shadow); padding:22px;
+  }
+
+  .segmented{
+    display:inline-flex; background:var(--bg-panel-2); border:1px solid var(--border); border-radius:11px; padding:3px; gap:2px;
+  }
+  .segmented button{
+    border:0; background:transparent; color:var(--text-dim); font-family:inherit;
+    font-size:12.5px; padding:7px 13px; border-radius:8px; cursor:pointer; transition:.2s;
+  }
+  .segmented button.active{ background:var(--gold); color:var(--ink); font-weight:600; }
+
+  .chip{
+    display:inline-flex; align-items:center; gap:6px; font-size:12px;
+    border:1px solid var(--border-strong); border-radius:999px; padding:6px 12px; color:var(--text-dim);
+    background:var(--bg-panel-2);
+  }
+  .chip .dot{ width:7px; height:7px; border-radius:50%; }
+
+  /* ---------- map ---------- */
+  .map-grid{ display:grid; grid-template-columns:1fr; gap:16px; }
+  .map-wrap{ position:relative; border-radius:14px; overflow:hidden; background:var(--bg-panel-2); min-height:420px; border:1px solid var(--border); }
+  .map-wrap svg{ width:100%; height:100%; display:block; }
+  .map-legend{
+    position:absolute; bottom:14px; inset-inline-start:14px; display:flex; gap:14px; flex-wrap:wrap;
+    background:color-mix(in srgb, var(--bg-panel) 82%, transparent); backdrop-filter:blur(6px);
+    padding:9px 14px; border-radius:11px; border:1px solid var(--border);
+  }
+  .map-legend .item{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-dim); }
+  .map-legend .sw{ width:9px; height:9px; border-radius:50%; }
+
+  .map-search{ position:absolute; top:14px; inset-inline-start:14px; z-index:5; width:250px; max-width:calc(100% - 28px); }
+  .inline-search{ position:relative; margin-bottom:16px; width:250px; max-width:100%; }
+  .search-box{
+    display:flex; align-items:center; gap:8px;
+    background:color-mix(in srgb, var(--bg-panel) 92%, transparent); backdrop-filter:blur(8px);
+    border:1px solid var(--border-strong); border-radius:11px; padding:9px 12px;
+    box-shadow:var(--shadow);
+  }
+  .inline-search .search-box{ background:var(--bg-panel-2); backdrop-filter:none; box-shadow:none; }
+  .search-box .icon{ font-size:13px; opacity:.7; flex-shrink:0; }
+  .search-box input{
+    border:0; background:transparent; outline:none; flex:1; min-width:0;
+    font-family:'Heebo', Arial, sans-serif; font-size:13px; color:var(--text);
+  }
+  .search-box input::placeholder{ color:var(--text-faint); }
+  .search-box .clear-btn{
+    border:0; background:var(--bg-panel-2); color:var(--text-dim); border-radius:50%;
+    width:18px; height:18px; font-size:10px; cursor:pointer; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .inline-search .search-box .clear-btn{ background:var(--bg-panel); }
+  .search-dropdown{
+    margin-top:6px; max-height:260px; overflow-y:auto;
+    background:var(--bg-panel); border:1px solid var(--border-strong); border-radius:11px;
+    box-shadow:var(--shadow); padding:6px;
+  }
+  .inline-search .search-dropdown{ position:absolute; top:100%; inset-inline-start:0; inset-inline-end:0; z-index:6; }
+  .search-dropdown .opt{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:8px 10px; border-radius:8px; cursor:pointer; font-size:12.5px;
+  }
+  .search-dropdown .opt:hover, .search-dropdown .opt.active{ background:var(--bg-panel-2); }
+  .search-dropdown .opt .status{ display:flex; align-items:center; gap:6px; color:var(--text-dim); font-size:11.5px; }
+  .search-dropdown .opt .status .sw{ width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+  .search-dropdown .empty{ padding:14px 10px; text-align:center; font-size:12px; color:var(--text-faint); }
+
+  /* ---------- station chart ---------- */
+  .area-chart{ width:100%; height:230px; }
+  .date-filter{
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    margin-bottom:16px; font-size:12.5px; color:var(--text-dim);
+  }
+  .date-filter input[type="date"]{
+    background:var(--bg-panel-2); border:1px solid var(--border-strong); border-radius:8px;
+    padding:6px 10px; font-family:'Heebo', Arial, sans-serif; font-size:12.5px; color:var(--text);
+    color-scheme: light;
+  }
+  .date-filter button.df-apply{
+    background:var(--gold); color:var(--ink); border:0; border-radius:8px;
+    padding:7px 16px; font-size:12.5px; font-weight:700; cursor:pointer; font-family:inherit;
+  }
+  .date-filter button.df-apply:hover{ background:var(--gold-soft); }
+  .date-filter .df-status{ font-size:11.5px; color:var(--text-faint); margin-inline-start:4px; }
+  .legend-inline{ display:flex; gap:16px; margin-top:14px; }
+  .legend-inline .item{ display:flex; align-items:center; gap:7px; font-size:12px; color:var(--text-dim); }
+  .legend-inline .sw{ width:12px; height:12px; border-radius:4px; }
+
+  /* ---------- skyline bars (rides) ---------- */
+  .skyline-scroll{ overflow-x:auto; direction:ltr; }
+  .skyline{ display:flex; align-items:flex-end; gap:6px; height:220px; padding-top:34px; box-sizing:content-box; min-width:520px; position:relative; }
+  .week-marker{ position:absolute; top:0; bottom:0; border-left:1.3px dashed var(--gold); opacity:0.55; pointer-events:none; }
+  .wm-label{ position:absolute; top:0; transform:translateX(-50%); font-size:11px; font-weight:700; color:var(--gold); white-space:nowrap; pointer-events:none; }
+  .skyline .col{ flex:1; display:flex; flex-direction:column; justify-content:flex-end; height:100%; position:relative; }
+  .skyline .bar-fill{ display:flex; flex-direction:column; justify-content:flex-end; gap:2px; height:100%; border-radius:5px 5px 2px 2px; overflow:hidden; }
+  .skyline .bar-value{ position:absolute; bottom:100%; left:50%; transform:translateX(-50%); margin-bottom:4px; font-size:11px; font-weight:700; color:var(--text); white-space:nowrap; }
+  .skyline .seg{ width:100%; }
+  .skyline .seg.electric{ background:linear-gradient(180deg, var(--gold-soft), var(--gold)); }
+  .skyline .seg.regular{ background:linear-gradient(180deg, var(--teal-soft), var(--teal)); }
+  .skyline-labels{ display:flex; gap:6px; margin-top:10px; min-width:520px; }
+  .skyline-labels span{ flex:1; text-align:center; font-size:10.5px; color:var(--text-faint); }
+
+  /* ---------- table ---------- */
+  table.ranking{ width:100%; min-width:480px; border-collapse:collapse; font-size:13px; }
+  table.ranking th{ text-align:right; color:var(--text-faint); font-weight:500; font-size:11.5px; padding:0 10px 12px; border-bottom:1px solid var(--border-strong); }
+  table.ranking.sticky-head th{ position:sticky; top:0; background:var(--bg-panel); padding-top:8px; z-index:2; }
+  table.ranking td{ padding:12px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  table.ranking tr:last-child td{ border-bottom:0; }
+  .station-name{ font-weight:600; }
+  .bar-cell{ display:flex; align-items:center; gap:10px; min-width:150px; }
+  .bar-num{ font-size:12.5px; font-weight:700; color:var(--text); flex-shrink:0; min-width:26px; }
+  .bar-track{ flex:1; height:10px; background:var(--bg-panel-2); border-radius:99px; overflow:hidden; display:flex; min-width:90px; direction:ltr; }
+  .bar-track .seg{ height:100%; }
+  .bar-track .seg.regular{ background:var(--teal); }
+  .bar-track .seg.electric{ background:var(--gold); }
+  .bar-track .seg.rides{ background:var(--slate); }
+
+  /* ---------- line charts (trend) ---------- */
+  .line-chart{ width:100%; height:170px; }
+  .trend-figure{ display:flex; align-items:baseline; gap:8px; margin-bottom:4px; }
+  .trend-figure .val{ font-family:'Heebo', Arial, sans-serif; font-size:26px; font-weight:800; }
+  .trend-figure .delta{ font-size:12px; padding:2px 8px; border-radius:999px; font-weight:600; }
+  .delta.up{ background:color-mix(in srgb, var(--red) 16%, transparent); color:var(--red-soft); }
+  .delta.down{ background:color-mix(in srgb, var(--teal) 16%, transparent); color:var(--teal-soft); }
+
+  /* ---------- chronic empty ---------- */
+  .chronic-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(230px,1fr)); gap:12px; }
+  .chronic-card{
+    border:1px solid color-mix(in srgb, var(--red) 35%, var(--border));
+    background:color-mix(in srgb, var(--red) 7%, var(--bg-panel));
+    border-radius:14px; padding:16px;
+  }
+  .chronic-card .top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .chronic-card .streak{ font-family:'Heebo', Arial, sans-serif; font-size:20px; font-weight:800; color:var(--red-soft); }
+  .chronic-card .name{ font-weight:600; font-size:13.5px; margin-bottom:3px; }
+  .chronic-card .meta{ font-size:11.5px; color:var(--text-dim); }
+  .filter-row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:18px; }
+  .num-input{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-dim); }
+  .num-input input[type=range]{ accent-color:var(--gold); }
+
+  /* ---------- histogram ---------- */
+  .hist{ display:flex; align-items:flex-end; gap:5px; height:180px; padding-top:38px; box-sizing:content-box; direction:ltr; }
+  .hist .bar{ flex:1; background:linear-gradient(180deg, #9aa1af, var(--slate)); border-radius:4px 4px 0 0; position:relative; }
+  .hist .bar .hist-value{
+    position:absolute; bottom:100%; left:50%; transform:translateX(-50%);
+    margin-bottom:5px; text-align:center; white-space:nowrap; line-height:1.35;
+  }
+  .hist .bar .hist-value .n{ display:block; font-size:12px; font-weight:700; color:var(--text); }
+  .hist .bar .hist-value .p{ display:block; font-size:10px; color:var(--text-faint); }
+
+  footer{ text-align:center; padding:60px 20px 40px; color:var(--text-faint); font-size:12px; border-top:1px solid var(--border); margin-top:70px; }
+
+  .chart-tooltip{
+    position:fixed; z-index:200; pointer-events:none;
+    background:var(--bg-panel); border:1px solid var(--border-strong); border-radius:11px;
+    padding:10px 13px; box-shadow:var(--shadow); min-width:150px;
+    transition:opacity .1s ease;
+  }
+  .chart-tooltip .tt-date{ font-size:12px; font-weight:700; color:var(--text); margin-bottom:6px; }
+  .chart-tooltip .tt-row{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-dim); margin-bottom:3px; }
+  .chart-tooltip .tt-row b{ margin-inline-start:auto; color:var(--text); font-weight:700; }
+  .chart-tooltip .tt-dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .chart-tooltip .tt-total{ font-size:11.5px; color:var(--text-faint); margin-top:6px; padding-top:6px; border-top:1px solid var(--border); }
+  .hover-band{ fill:transparent; pointer-events:all; cursor:pointer; }
+  .hover-band:hover{ fill:color-mix(in srgb, var(--text) 5%, transparent); }
+  .bar-hover{ cursor:pointer; }
+  .bar-hover2{ cursor:pointer; }
+  table.ranking.filter-electric .seg.regular,
+  table.ranking.filter-regular .seg.electric{ display:none; }
+
+  @media (max-width:760px){
+    main{ padding:0 14px 80px; }
+    section{ padding:40px 2px 0; }
+    .kpi-grid{ grid-template-columns:repeat(2,1fr); gap:10px; }
+    .kpi{ padding:16px 16px; }
+    .kpi-value{ font-size:26px; }
+    header.topbar{ padding:12px 16px; }
+    .hero-top h2{ font-size:22px; }
+    .section-head h3{ font-size:18px; }
+    .map-wrap{ min-height:300px; }
+  }
+  @media (max-width:420px){
+    .kpi-grid{ grid-template-columns:1fr; }
+    .brand-text span{ display:none; }
+  }
+
+  /* focus visibility */
+  a:focus-visible, button:focus-visible, select:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+
+  .proposal-banner{
+    background:linear-gradient(90deg, color-mix(in srgb, var(--gold) 20%, transparent), transparent);
+    border:1px dashed var(--border-strong);
+    border-radius:12px; padding:12px 18px; font-size:12.5px; color:var(--text-dim);
+    margin:18px 4px 0; display:flex; align-items:center; gap:10px;
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">
+      <img src="data:image/png;base64,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" alt="ירופאן — לוגו" />
+    </div>
+    <div class="brand-text">
+      <h1>ירופאן מוניטור</h1>
+      <span>ניטור רשת האופניים · ירושלים</span>
+    </div>
+  </div>
+
+  <div class="nav-dropdown" id="navDropdown">
+    <button type="button" class="nav-dropdown-btn" id="navDropdownBtn">
+      <span>☰ ניווט</span>
+      <span class="chev">▾</span>
+    </button>
+    <div class="nav-dropdown-menu" id="navDropdownMenu" hidden>
+      <a href="javascript:void(0)" data-target="kpis">כללי</a>
+      <a href="javascript:void(0)" data-target="map-sec">מפה</a>
+      <a href="javascript:void(0)" data-target="station-sec">תחנות</a>
+      <a href="javascript:void(0)" data-target="rides">נסיעות</a>
+      <a href="javascript:void(0)" data-target="ranking">דירוג תחנות</a>
+      <a href="javascript:void(0)" data-target="trend-malfunction">אופניים תקולים</a>
+      <a href="javascript:void(0)" data-target="trend-empty">תחנות ריקות</a>
+      <a href="javascript:void(0)" data-target="chronic">כרוניות</a>
+      <a href="javascript:void(0)" data-target="dist">התפלגות</a>
+    </div>
+  </div>
+
+</header>
+
+<main>
+
+  <!-- HERO / KPIs -->
+  <section id="kpis" class="hero">
+    <div class="hero-top">
+      <div>
+        <div class="hero-eyebrow"><span class="pulse-dot teal" style="width:7px;height:7px;"></span> עדכון אחרון לפני 4 דקות ב-14:32 17/7</div>
+        <h2>📊 מספרים כלליים</h2>
+        <p class="hero-note">המספרים בכרטיסיות מבוססים על המדידה העדכנית ביותר שנאספה מהרשת, כל 15 דקות.</p>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi gold">
+        <div class="kpi-label"><span class="name">אופניים זמינים</span><span class="pulse-dot gold"></span></div>
+        <div class="kpi-value num">82.6%</div>
+        <div class="kpi-sub num">2,148 / 2,600 אופניים</div>
+        <div class="kpi-delta good"><span class="arrow">▲</span><span class="value num">4.1%</span><span class="ctx">לעומת שבוע שעבר באותה שעה</span></div>
+      </div>
+      <div class="kpi teal">
+        <div class="kpi-label"><span class="name">תחנות פעילות</span><span class="pulse-dot teal"></span></div>
+        <div class="kpi-value num">214</div>
+        <div class="kpi-delta neutral"><span class="arrow">–</span><span class="value num">ללא שינוי</span><span class="ctx">לעומת שבוע שעבר באותה שעה</span></div>
+      </div>
+      <div class="kpi red">
+        <div class="kpi-label"><span class="name">תחנות ריקות כעת</span><span class="pulse-dot red"></span></div>
+        <div class="kpi-value num">17</div>
+        <div class="kpi-delta bad"><span class="arrow">▲</span><span class="value num">3 תחנות</span><span class="ctx">לעומת שבוע שעבר באותה שעה</span></div>
+      </div>
+      <div class="kpi slate">
+        <div class="kpi-label"><span class="name">אופניים תקולים</span><span class="pulse-dot slate"></span></div>
+        <div class="kpi-value num">3.2%</div>
+        <div class="kpi-sub num">86 / 2,686 אופניים</div>
+        <div class="kpi-delta good"><span class="arrow">▼</span><span class="value num">2.3%</span><span class="ctx">לעומת שבוע שעבר באותה שעה</span></div>
+      </div>
+      <div class="kpi teal">
+        <div class="kpi-label"><span class="name">מספר נסיעות יומי</span><span class="pulse-dot teal"></span></div>
+        <div class="kpi-value num">1,842</div>
+        <div class="kpi-delta good"><span class="arrow">▲</span><span class="value num">7.4%</span><span class="ctx">לעומת שבוע שעבר באותה שעה</span></div>
+      </div>
+      <div class="kpi donut">
+        <div class="donut-title">יחס אופניים חשמליים/רגילים</div>
+        <div class="donut-wrap">
+          <svg viewBox="0 0 260 128" fill="none">
+            <path d="M 46 122 A 84 84 0 0 1 160.92 43.9" stroke="var(--gold)" stroke-width="30" stroke-linecap="butt"/>
+            <path d="M 160.92 43.9 A 84 84 0 0 1 214 122" stroke="var(--teal)" stroke-width="30" stroke-linecap="butt"/>
+          </svg>
+          <div class="donut-center">
+            <div class="n num">2,148</div>
+            <div class="l">אופניים זמינים</div>
+          </div>
+        </div>
+        <div class="donut-legend">
+          <div class="leg electric">⚡ <span class="num">62%</span></div>
+          <div class="leg regular">🚲 <span class="num">38%</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAP -->
+  <section id="map-sec">
+    <div class="section-head">
+      <div>
+        <h3><span class="num-tag">01</span> 🗺️ מפה אינטראקטיבית</h3>
+        <p class="hint">תצוגה חיה של כלל תחנות הרשת. צבע הנקודה משקף את מצב התחנה; לחיצה על תחנה פותחת את הגרף בסעיף הבא.</p>
+      </div>
+    </div>
+    <div class="map-grid">
+      <div class="map-wrap">
+        <div class="map-search" id="mapSearch">
+          <div class="search-box">
+            <span class="icon">🔍</span>
+            <input type="text" id="stationSearchInput" placeholder="חיפוש תחנה…" autocomplete="off">
+            <button type="button" class="clear-btn" id="stationSearchClear" aria-label="נקה חיפוש" hidden>✕</button>
+          </div>
+          <div class="search-dropdown" id="stationDropdown" hidden></div>
+        </div>
+        <svg viewBox="0 0 640 460" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <radialGradient id="mapGrad" cx="50%" cy="35%" r="75%">
+              <stop offset="0%" stop-color="var(--bg-panel-2)"/>
+              <stop offset="100%" stop-color="var(--bg-panel)"/>
+            </radialGradient>
+          </defs>
+          <rect width="640" height="460" fill="url(#mapGrad)"/>
+          <g stroke="var(--border-strong)" stroke-width="1" opacity="0.6">
+            <path d="M20 340 C 160 300, 260 260, 340 180 S 520 90, 610 60" fill="none"/>
+            <path d="M40 60 C 140 140, 220 190, 300 260 S 480 380, 600 420" fill="none"/>
+            <path d="M0 220 C 140 210, 300 230, 460 200 S 600 170, 640 200" fill="none"/>
+          </g>
+          <!-- stations: color coded pulse dots -->
+          <g id="stationDots" font-family="Heebo" font-size="9">
+          </g>
+        </svg>
+        <div class="map-legend">
+          <div class="item"><span class="sw" style="background:var(--teal);"></span> זמינה</div>
+          <div class="item"><span class="sw" style="background:var(--red);"></span> ריקה</div>
+          <div class="item"><span class="sw" style="background:var(--text-faint);"></span> מושבתת</div>
+          <div class="item"><span class="sw" style="background:var(--gold);"></span> ✡ פעילה בשבת</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATION SPECIFIC -->
+  <section id="station-sec">
+    <div class="section-head">
+      <div>
+        <h3><span class="num-tag">02</span> 🔍 מספר אופניים בתחנה</h3>
+        <p class="hint">ממוצע אופניים זמינים בתחנה הנבחרת. בגרף שעתי הנתונים המוצגים הם הנתונים המדויקים.</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <div class="segmented" id="stationChartType">
+          <button data-view="bars">📊 עמודות</button><button class="active" data-view="line">📈 קו</button>
+        </div>
+        <div class="segmented" id="stationPeriod"><button class="active" data-period="daily">יומי</button><button data-period="weekly">שבועי</button><button data-period="monthly">חודשי</button>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="date-filter">
+        <span>הצג נתונים בין</span>
+        <input type="date" id="stationDateFrom" value="2026-06-30">
+        <span>ל-</span>
+        <input type="date" id="stationDateTo" value="2026-07-12">
+        <button type="button" class="df-apply" id="stationDateApply">החל</button>
+        <span class="df-status" id="stationDateStatus">מציג: 30/6 – 12/7</span>
+      </div>
+      <div class="inline-search" id="stationChartSearch">
+        <div class="search-box">
+          <span class="icon">🔍</span>
+          <input type="text" id="stationChartSearchInput" placeholder="חיפוש תחנה…" autocomplete="off" value="מחנה יהודה — שער יפו">
+          <button type="button" class="clear-btn" id="stationChartSearchClear" aria-label="נקה חיפוש">✕</button>
+        </div>
+        <div class="search-dropdown" id="stationChartDropdown" hidden></div>
+      </div>
+      <div id="stationLineView">
+      <svg class="area-chart" viewBox="0 0 700 230" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="fillGold" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--gold)" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="var(--gold)" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="fillTeal" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--teal)" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="var(--teal)" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <g stroke="var(--border)" stroke-width="1">
+          <line x1="0" y1="40" x2="700" y2="40"/><line x1="0" y1="90" x2="700" y2="90"/>
+          <line x1="0" y1="140" x2="700" y2="140"/><line x1="0" y1="188" x2="700" y2="188"/>
+        </g>
+        <g id="stationChartDyn"></g>
+      </svg>
+      </div>
+      <div id="stationBarsView" hidden>
+        <div class="skyline-scroll">
+        <div class="skyline" id="stationSkyline">
+          <div class="col bar-hover" style="height:25%;" data-date="30/6" data-regular="8" data-electric="2" data-total="10"><span class="bar-value">10</span><div class="bar-fill"><div class="seg regular" style="height:80%;"></div><div class="seg electric" style="height:20%;"></div></div></div>
+          <div class="col bar-hover" style="height:45%;" data-date="1/7" data-regular="14" data-electric="4" data-total="18"><span class="bar-value">18</span><div class="bar-fill"><div class="seg regular" style="height:77.78%;"></div><div class="seg electric" style="height:22.22%;"></div></div></div>
+          <div class="col bar-hover" style="height:17.5%;" data-date="2/7" data-regular="6" data-electric="1" data-total="7"><span class="bar-value">7</span><div class="bar-fill"><div class="seg regular" style="height:85.71%;"></div><div class="seg electric" style="height:14.29%;"></div></div></div>
+          <div class="col bar-hover" style="height:70%;" data-date="3/7" data-regular="20" data-electric="8" data-total="28"><span class="bar-value">28</span><div class="bar-fill"><div class="seg regular" style="height:71.43%;"></div><div class="seg electric" style="height:28.57%;"></div></div></div>
+          <div class="col bar-hover" style="height:52.5%;" data-date="4/7" data-regular="16" data-electric="5" data-total="21"><span class="bar-value">21</span><div class="bar-fill"><div class="seg regular" style="height:76.19%;"></div><div class="seg electric" style="height:23.81%;"></div></div></div>
+          <div class="col bar-hover" style="height:90%;" data-date="5/7 · א׳" data-regular="26" data-electric="10" data-total="36"><span class="bar-value">36</span><div class="bar-fill"><div class="seg regular" style="height:72.22%;"></div><div class="seg electric" style="height:27.78%;"></div></div></div>
+          <div class="col bar-hover" style="height:72.5%;" data-date="6/7" data-regular="22" data-electric="7" data-total="29"><span class="bar-value">29</span><div class="bar-fill"><div class="seg regular" style="height:75.86%;"></div><div class="seg electric" style="height:24.14%;"></div></div></div>
+          <div class="col bar-hover" style="height:100%;" data-date="7/7" data-regular="28" data-electric="12" data-total="40"><span class="bar-value">40</span><div class="bar-fill"><div class="seg regular" style="height:70%;"></div><div class="seg electric" style="height:30%;"></div></div></div>
+          <div class="col bar-hover" style="height:62.5%;" data-date="8/7" data-regular="19" data-electric="6" data-total="25"><span class="bar-value">25</span><div class="bar-fill"><div class="seg regular" style="height:76%;"></div><div class="seg electric" style="height:24%;"></div></div></div>
+          <div class="col bar-hover" style="height:82.5%;" data-date="9/7" data-regular="24" data-electric="9" data-total="33"><span class="bar-value">33</span><div class="bar-fill"><div class="seg regular" style="height:72.73%;"></div><div class="seg electric" style="height:27.27%;"></div></div></div>
+          <div class="col bar-hover" style="height:52.5%;" data-date="10/7" data-regular="17" data-electric="4" data-total="21"><span class="bar-value">21</span><div class="bar-fill"><div class="seg regular" style="height:80.95%;"></div><div class="seg electric" style="height:19.05%;"></div></div></div>
+          <div class="col bar-hover" style="height:90%;" data-date="11/7" data-regular="26" data-electric="10" data-total="36"><span class="bar-value">36</span><div class="bar-fill"><div class="seg regular" style="height:72.22%;"></div><div class="seg electric" style="height:27.78%;"></div></div></div>
+          <div class="col bar-hover" style="height:77.5%;" data-date="12/7 · א׳" data-regular="23" data-electric="8" data-total="31"><span class="bar-value">31</span><div class="bar-fill"><div class="seg regular" style="height:74.19%;"></div><div class="seg electric" style="height:25.81%;"></div></div></div>
+          <div class="week-marker" style="left:42.31%;"></div>
+          <div class="wm-label" style="left:42.31%;">א׳</div>
+          <div class="week-marker" style="left:96.15%;"></div>
+          <div class="wm-label" style="left:96.15%;">א׳</div>
+        </div>
+        <div class="skyline-labels" id="stationSkylineLabels">
+          <span>30/6</span><span>1/7</span><span>2/7</span><span>3/7</span><span>4/7</span><span style="color:var(--gold);font-weight:700;">5/7</span><span>6/7</span><span>7/7</span><span>8/7</span><span>9/7</span><span>10/7</span><span>11/7</span><span style="color:var(--gold);font-weight:700;">12/7</span>
+        </div>
+        </div>
+      </div>
+      <div class="legend-inline">
+        <div class="item"><span class="sw" style="background:var(--teal);"></span> רגיל</div>
+        <div class="item"><span class="sw" style="background:var(--gold);"></span> חשמלי</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RIDES -->
+  <section id="rides">
+    <div class="section-head">
+      <div>
+        <h3><span class="num-tag">03</span> 🚴 כמות נסיעות משוערכת לאורך זמן</h3>
+        <p class="hint">כל ירידה בכמות האופניים בתחנה בין שתי מדידות עוקבות נספרת כנסיעה.</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <div class="segmented" id="ridesChartType">
+          <button class="active" data-view="bars">📊 עמודות</button><button data-view="line">📈 קו</button>
+        </div>
+        <div class="segmented" id="ridesPeriod">
+          <button data-period="hourly">שעתי</button><button class="active" data-period="daily">יומי</button><button data-period="weekly">שבועי</button><button data-period="monthly">חודשי</button>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="date-filter">
+        <span>הצג נתונים בין</span>
+        <input type="date" id="ridesDateFrom" value="2026-06-29">
+        <span>ל-</span>
+        <input type="date" id="ridesDateTo" value="2026-07-12">
+        <button type="button" class="df-apply" id="ridesDateApply">החל</button>
+        <span class="df-status" id="ridesDateStatus">מציג: 29/6 – 12/7</span>
+      </div>
+      <div class="skyline-scroll" id="ridesBarsView">
+      <div class="skyline" id="ridesSkyline">
+        <div class="col bar-hover" style="height:52%;" data-date="29/6" data-regular="150" data-electric="100" data-total="250"><span class="bar-value">250</span><div class="bar-fill"><div class="seg regular" style="height:60%;"></div><div class="seg electric" style="height:40%;"></div></div></div>
+        <div class="col bar-hover" style="height:64%;" data-date="30/6" data-regular="169" data-electric="138" data-total="307"><span class="bar-value">307</span><div class="bar-fill"><div class="seg regular" style="height:55%;"></div><div class="seg electric" style="height:45%;"></div></div></div>
+        <div class="col bar-hover" style="height:48%;" data-date="1/7" data-regular="150" data-electric="81" data-total="231"><span class="bar-value">231</span><div class="bar-fill"><div class="seg regular" style="height:65%;"></div><div class="seg electric" style="height:35%;"></div></div></div>
+        <div class="col bar-hover" style="height:80%;" data-date="2/7" data-regular="223" data-electric="161" data-total="384"><span class="bar-value">384</span><div class="bar-fill"><div class="seg regular" style="height:58%;"></div><div class="seg electric" style="height:42%;"></div></div></div>
+        <div class="col bar-hover" style="height:95%;" data-date="3/7" data-regular="228" data-electric="228" data-total="456"><span class="bar-value">456</span><div class="bar-fill"><div class="seg regular" style="height:50%;"></div><div class="seg electric" style="height:50%;"></div></div></div>
+        <div class="col bar-hover" style="height:70%;" data-date="4/7" data-regular="208" data-electric="128" data-total="336"><span class="bar-value">336</span><div class="bar-fill"><div class="seg regular" style="height:62%;"></div><div class="seg electric" style="height:38%;"></div></div></div>
+        <div class="col bar-hover" style="height:58%;" data-date="5/7 · א׳" data-regular="189" data-electric="89" data-total="278"><span class="bar-value">278</span><div class="bar-fill"><div class="seg regular" style="height:68%;"></div><div class="seg electric" style="height:32%;"></div></div></div>
+        <div class="col bar-hover" style="height:88%;" data-date="6/7" data-regular="220" data-electric="203" data-total="423"><span class="bar-value">423</span><div class="bar-fill"><div class="seg regular" style="height:52%;"></div><div class="seg electric" style="height:48%;"></div></div></div>
+        <div class="col bar-hover" style="height:100%;" data-date="7/7" data-regular="226" data-electric="254" data-total="480"><span class="bar-value">480</span><div class="bar-fill"><div class="seg regular" style="height:47%;"></div><div class="seg electric" style="height:53%;"></div></div></div>
+        <div class="col bar-hover" style="height:76%;" data-date="8/7" data-regular="219" data-electric="146" data-total="365"><span class="bar-value">365</span><div class="bar-fill"><div class="seg regular" style="height:60%;"></div><div class="seg electric" style="height:40%;"></div></div></div>
+        <div class="col bar-hover" style="height:60%;" data-date="9/7" data-regular="184" data-electric="104" data-total="288"><span class="bar-value">288</span><div class="bar-fill"><div class="seg regular" style="height:64%;"></div><div class="seg electric" style="height:36%;"></div></div></div>
+        <div class="col bar-hover" style="height:44%;" data-date="10/7" data-regular="148" data-electric="63" data-total="211"><span class="bar-value">211</span><div class="bar-fill"><div class="seg regular" style="height:70%;"></div><div class="seg electric" style="height:30%;"></div></div></div>
+        <div class="col bar-hover" style="height:66%;" data-date="11/7" data-regular="181" data-electric="136" data-total="317"><span class="bar-value">317</span><div class="bar-fill"><div class="seg regular" style="height:57%;"></div><div class="seg electric" style="height:43%;"></div></div></div>
+        <div class="col bar-hover" style="height:82%;" data-date="12/7 · א׳" data-regular="209" data-electric="185" data-total="394"><span class="bar-value">394</span><div class="bar-fill"><div class="seg regular" style="height:53%;"></div><div class="seg electric" style="height:47%;"></div></div></div>
+        <div class="week-marker" style="left:46.43%;"></div>
+        <div class="wm-label" style="left:46.43%;">א׳</div>
+        <div class="week-marker" style="left:96.43%;"></div>
+        <div class="wm-label" style="left:96.43%;">א׳</div>
+      </div>
+      <div class="skyline-labels" id="ridesSkylineLabels">
+        <span>29/6</span><span>30/6</span><span>1/7</span><span>2/7</span><span>3/7</span><span>4/7</span><span style="color:var(--gold);font-weight:700;">5/7</span><span>6/7</span><span>7/7</span><span>8/7</span><span>9/7</span><span>10/7</span><span>11/7</span><span style="color:var(--gold);font-weight:700;">12/7</span>
+      </div>
+      </div>
+
+      <div id="ridesLineView" hidden style="direction:ltr;">
+        <svg class="area-chart" viewBox="0 0 700 230" preserveAspectRatio="none">
+          <g stroke="var(--border)" stroke-width="1">
+            <line x1="0" y1="40" x2="700" y2="40"/><line x1="0" y1="90" x2="700" y2="90"/>
+            <line x1="0" y1="140" x2="700" y2="140"/><line x1="0" y1="188" x2="700" y2="188"/>
+          </g>
+          <g id="ridesLineDyn"></g>
+        </svg>
+      </div>
+
+      <div class="legend-inline" style="margin-top:18px;">
+        <div class="item"><span class="sw" style="background:var(--teal);"></span> רגיל</div>
+        <div class="item"><span class="sw" style="background:var(--gold);"></span> חשמלי</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RANKING -->
+  <section id="ranking">
+    <div class="section-head">
+      <div>
+        <h3><span class="num-tag">04</span> 🏅 דירוג תחנות</h3>
+        <p class="hint">דירוג התחנות לפי מספר האופניים בכל תחנה או לפי מספר הנסיעות שיצאו מכל תחנה בשבוע האחרון.</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <div class="segmented" id="rankingTypeFilter"><button class="active" data-type="all">הכל</button><button data-type="electric">⚡ חשמלי</button><button data-type="regular">🚲 רגיל</button></div>
+        <div class="segmented" id="rankingSort">
+          <button class="active" data-sort="bikes" data-dir="desc"><span class="arrow">↓</span> כמות אופניים</button><button data-sort="rides" data-dir="desc"><span class="arrow">↓</span> נסיעות השבוע</button>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div style="overflow-x:auto; overflow-y:auto; max-height:340px;">
+      <table class="ranking sticky-head">
+        <thead><tr><th>תחנה</th><th>כמות אופניים עדכנית</th><th>מספר נסיעות בשבוע האחרון</th></tr></thead>
+        <tbody id="rankingBody">
+          <tr data-bikes="28" data-rides="312"><td class="station-name">תחנה מרכזית — כניסה דרומית</td>
+            <td><div class="bar-cell bar-hover2" data-total="28" data-regular="18" data-electric="10" data-total-label="סה״כ אופניים" data-label="תחנה מרכזית — כניסה דרומית · כמות אופניים"><span class="bar-num" data-total="28" data-regular="18" data-electric="10">28</span><div class="bar-track"><div class="seg regular" style="width:64.29%;"></div><div class="seg electric" style="width:35.71%;"></div></div></div></td>
+            <td><div class="bar-cell bar-hover2" data-total="312" data-regular="190" data-electric="122" data-total-label="סה״כ נסיעות" data-label="תחנה מרכזית — כניסה דרומית · נסיעות בשבוע האחרון"><span class="bar-num" data-total="312" data-regular="190" data-electric="122">312</span><div class="bar-track"><div class="seg regular" style="width:60.9%;"></div><div class="seg electric" style="width:39.1%;"></div></div></div></td></tr>
+          <tr data-bikes="24" data-rides="265"><td class="station-name">גבעת רם — הר הצופים</td>
+            <td><div class="bar-cell bar-hover2" data-total="24" data-regular="15" data-electric="9" data-total-label="סה״כ אופניים" data-label="גבעת רם — הר הצופים · כמות אופניים"><span class="bar-num" data-total="24" data-regular="15" data-electric="9">24</span><div class="bar-track"><div class="seg regular" style="width:53.57%;"></div><div class="seg electric" style="width:32.14%;"></div></div></div></td>
+            <td><div class="bar-cell bar-hover2" data-total="265" data-regular="139" data-electric="126" data-total-label="סה״כ נסיעות" data-label="גבעת רם — הר הצופים · נסיעות בשבוע האחרון"><span class="bar-num" data-total="265" data-regular="139" data-electric="126">265</span><div class="bar-track"><div class="seg regular" style="width:44.55%;"></div><div class="seg electric" style="width:40.38%;"></div></div></div></td></tr>
+          <tr data-bikes="17" data-rides="190"><td class="station-name">רחביה — כיכר דניה</td>
+            <td><div class="bar-cell bar-hover2" data-total="17" data-regular="10" data-electric="7" data-total-label="סה״כ אופניים" data-label="רחביה — כיכר דניה · כמות אופניים"><span class="bar-num" data-total="17" data-regular="10" data-electric="7">17</span><div class="bar-track"><div class="seg regular" style="width:35.71%;"></div><div class="seg electric" style="width:25.0%;"></div></div></div></td>
+            <td><div class="bar-cell bar-hover2" data-total="190" data-regular="106" data-electric="84" data-total-label="סה״כ נסיעות" data-label="רחביה — כיכר דניה · נסיעות בשבוע האחרון"><span class="bar-num" data-total="190" data-regular="106" data-electric="84">190</span><div class="bar-track"><div class="seg regular" style="width:33.97%;"></div><div class="seg electric" style="width:26.92%;"></div></div></div></td></tr>
+          <tr data-bikes="6" data-rides="221"><td class="station-name">קטמון — רחוב הפלמ״ח</td>
+            <td><div class="bar-cell bar-hover2" data-total="6" data-regular="4" data-electric="2" data-total-label="סה״כ אופניים" data-label="קטמון — רחוב הפלמ״ח · כמות אופניים"><span class="bar-num" data-total="6" data-regular="4" data-electric="2">6</span><div class="bar-track"><div class="seg regular" style="width:14.29%;"></div><div class="seg electric" style="width:7.14%;"></div></div></div></td>
+            <td><div class="bar-cell bar-hover2" data-total="221" data-regular="122" data-electric="99" data-total-label="סה״כ נסיעות" data-label="קטמון — רחוב הפלמ״ח · נסיעות בשבוע האחרון"><span class="bar-num" data-total="221" data-regular="122" data-electric="99">221</span><div class="bar-track"><div class="seg regular" style="width:39.1%;"></div><div class="seg electric" style="width:31.73%;"></div></div></div></td></tr>
+          <tr data-bikes="0" data-rides="145"><td class="station-name">מחנה יהודה — שער יפו</td>
+            <td><div class="bar-cell bar-hover2" data-total="0" data-regular="0" data-electric="0" data-total-label="סה״כ אופניים" data-label="מחנה יהודה — שער יפו · כמות אופניים"><span class="bar-num" data-total="0" data-regular="0" data-electric="0">0</span><div class="bar-track"></div></div></td>
+            <td><div class="bar-cell bar-hover2" data-total="145" data-regular="90" data-electric="55" data-total-label="סה״כ נסיעות" data-label="מחנה יהודה — שער יפו · נסיעות בשבוע האחרון"><span class="bar-num" data-total="145" data-regular="90" data-electric="55">145</span><div class="bar-track"><div class="seg regular" style="width:28.85%;"></div><div class="seg electric" style="width:17.63%;"></div></div></div></td></tr>
+          <tr data-bikes="14" data-rides="178"><td class="station-name">כיכר ציון</td>
+            <td><div class="bar-cell bar-hover2" data-total="14" data-regular="9" data-electric="5" data-total-label="סה״כ אופניים" data-label="כיכר ציון · כמות אופניים"><span class="bar-num" data-total="14" data-regular="9" data-electric="5">14</span><div class="bar-track"><div class="seg regular" style="width:32.14%;"></div><div class="seg electric" style="width:17.86%;"></div></div></div></td>
+            <td><div class="bar-cell bar-hover2" data-total="178" data-regular="109" data-electric="69" data-total-label="סה״כ נסיעות" data-label="כיכר ציון · נסיעות בשבוע האחרון"><span class="bar-num" data-total="178" data-regular="109" data-electric="69">178</span><div class="bar-track"><div class="seg regular" style="width:34.94%;"></div><div class="seg electric" style="width:22.12%;"></div></div></div></td></tr>
+          <tr data-bikes="6" data-rides="96"><td class="station-name">עמק רפאים</td>
+            <td><div class="bar-cell bar-hover2" data-total="6" data-regular="4" data-electric="2" data-total-label="סה״כ אופניים" data-label="עמק רפאים · כמות אופניים"><span class="bar-num" data-total="6" data-regular="4" data-electric="2">6</span><div class="bar-track"><div class="seg regular" style="width:14.29%;"></div><div class="seg electric" style="width:7.14%;"></div></div></div></td>
+            <td><div class="bar-cell bar-hover2" data-total="96" data-regular="62" data-electric="34" data-total-label="סה״כ נסיעות" data-label="עמק רפאים · נסיעות בשבוע האחרון"><span class="bar-num" data-total="96" data-regular="62" data-electric="34">96</span><div class="bar-track"><div class="seg regular" style="width:19.87%;"></div><div class="seg electric" style="width:10.9%;"></div></div></div></td></tr>
+          <tr data-bikes="0" data-rides="40"><td class="station-name">הר הצופים — תצפית</td>
+            <td><div class="bar-cell bar-hover2" data-total="0" data-regular="0" data-electric="0" data-total-label="סה״כ אופניים" data-label="הר הצופים — תצפית · כמות אופניים"><span class="bar-num" data-total="0" data-regular="0" data-electric="0">0</span><div class="bar-track"></div></div></td>
+            <td><div class="bar-cell bar-hover2" data-total="40" data-regular="21" data-electric="19" data-total-label="סה״כ נסיעות" data-label="הר הצופים — תצפית · נסיעות בשבוע האחרון"><span class="bar-num" data-total="40" data-regular="21" data-electric="19">40</span><div class="bar-track"><div class="seg regular" style="width:6.73%;"></div><div class="seg electric" style="width:6.09%;"></div></div></div></td></tr>
+          <tr data-bikes="9" data-rides="120"><td class="station-name">גן סאקר</td>
+            <td><div class="bar-cell bar-hover2" data-total="9" data-regular="6" data-electric="3" data-total-label="סה״כ אופניים" data-label="גן סאקר · כמות אופניים"><span class="bar-num" data-total="9" data-regular="6" data-electric="3">9</span><div class="bar-track"><div class="seg regular" style="width:21.43%;"></div><div class="seg electric" style="width:10.71%;"></div></div></div></td>
+            <td><div class="bar-cell bar-hover2" data-total="120" data-regular="69" data-electric="51" data-total-label="סה״כ נסיעות" data-label="גן סאקר · נסיעות בשבוע האחרון"><span class="bar-num" data-total="120" data-regular="69" data-electric="51">120</span><div class="bar-track"><div class="seg regular" style="width:22.12%;"></div><div class="seg electric" style="width:16.35%;"></div></div></div></td></tr>
+          <tr data-bikes="11" data-rides="150"><td class="station-name">תלפיות — האומן</td>
+            <td><div class="bar-cell bar-hover2" data-total="11" data-regular="7" data-electric="4" data-total-label="סה״כ אופניים" data-label="תלפיות — האומן · כמות אופניים"><span class="bar-num" data-total="11" data-regular="7" data-electric="4">11</span><div class="bar-track"><div class="seg regular" style="width:25.0%;"></div><div class="seg electric" style="width:14.29%;"></div></div></div></td>
+            <td><div class="bar-cell bar-hover2" data-total="150" data-regular="79" data-electric="71" data-total-label="סה״כ נסיעות" data-label="תלפיות — האומן · נסיעות בשבוע האחרון"><span class="bar-num" data-total="150" data-regular="79" data-electric="71">150</span><div class="bar-track"><div class="seg regular" style="width:25.32%;"></div><div class="seg electric" style="width:22.76%;"></div></div></div></td></tr>
+          <tr data-bikes="13" data-rides="165"><td class="station-name">בית הכרם — הרצל</td>
+            <td><div class="bar-cell bar-hover2" data-total="13" data-regular="9" data-electric="4" data-total-label="סה״כ אופניים" data-label="בית הכרם — הרצל · כמות אופניים"><span class="bar-num" data-total="13" data-regular="9" data-electric="4">13</span><div class="bar-track"><div class="seg regular" style="width:32.14%;"></div><div class="seg electric" style="width:14.29%;"></div></div></div></td>
+            <td><div class="bar-cell bar-hover2" data-total="165" data-regular="91" data-electric="74" data-total-label="סה״כ נסיעות" data-label="בית הכרם — הרצל · נסיעות בשבוע האחרון"><span class="bar-num" data-total="165" data-regular="91" data-electric="74">165</span><div class="bar-track"><div class="seg regular" style="width:29.17%;"></div><div class="seg electric" style="width:23.72%;"></div></div></div></td></tr>
+          <tr data-bikes="8" data-rides="210"><td class="station-name">רחוב יפו — מרכז העיר</td>
+            <td><div class="bar-cell bar-hover2" data-total="8" data-regular="5" data-electric="3" data-total-label="סה״כ אופניים" data-label="רחוב יפו — מרכז העיר · כמות אופניים"><span class="bar-num" data-total="8" data-regular="5" data-electric="3">8</span><div class="bar-track"><div class="seg regular" style="width:17.86%;"></div><div class="seg electric" style="width:10.71%;"></div></div></div></td>
+            <td><div class="bar-cell bar-hover2" data-total="210" data-regular="124" data-electric="86" data-total-label="סה״כ נסיעות" data-label="רחוב יפו — מרכז העיר · נסיעות בשבוע האחרון"><span class="bar-num" data-total="210" data-regular="124" data-electric="86">210</span><div class="bar-track"><div class="seg regular" style="width:39.74%;"></div><div class="seg electric" style="width:27.56%;"></div></div></div></td></tr>
+          <tr data-bikes="10" data-rides="130"><td class="station-name">ימין משה</td>
+            <td><div class="bar-cell bar-hover2" data-total="10" data-regular="6" data-electric="4" data-total-label="סה״כ אופניים" data-label="ימין משה · כמות אופניים"><span class="bar-num" data-total="10" data-regular="6" data-electric="4">10</span><div class="bar-track"><div class="seg regular" style="width:21.43%;"></div><div class="seg electric" style="width:14.29%;"></div></div></div></td>
+            <td><div class="bar-cell bar-hover2" data-total="130" data-regular="68" data-electric="62" data-total-label="סה״כ נסיעות" data-label="ימין משה · נסיעות בשבוע האחרון"><span class="bar-num" data-total="130" data-regular="68" data-electric="62">130</span><div class="bar-track"><div class="seg regular" style="width:21.79%;"></div><div class="seg electric" style="width:19.87%;"></div></div></div></td></tr>
+          <tr data-bikes="0" data-rides="55"><td class="station-name">ארמון הנציב</td>
+            <td><div class="bar-cell bar-hover2" data-total="0" data-regular="0" data-electric="0" data-total-label="סה״כ אופניים" data-label="ארמון הנציב · כמות אופניים"><span class="bar-num" data-total="0" data-regular="0" data-electric="0">0</span><div class="bar-track"></div></div></td>
+            <td><div class="bar-cell bar-hover2" data-total="55" data-regular="30" data-electric="25" data-total-label="סה״כ נסיעות" data-label="ארמון הנציב · נסיעות בשבוע האחרון"><span class="bar-num" data-total="55" data-regular="30" data-electric="25">55</span><div class="bar-track"><div class="seg regular" style="width:9.62%;"></div><div class="seg electric" style="width:8.01%;"></div></div></div></td></tr>
+          <tr data-bikes="15" data-rides="200"><td class="station-name">תלפיות מזרח</td>
+            <td><div class="bar-cell bar-hover2" data-total="15" data-regular="10" data-electric="5" data-total-label="סה״כ אופניים" data-label="תלפיות מזרח · כמות אופניים"><span class="bar-num" data-total="15" data-regular="10" data-electric="5">15</span><div class="bar-track"><div class="seg regular" style="width:35.71%;"></div><div class="seg electric" style="width:17.86%;"></div></div></div></td>
+            <td><div class="bar-cell bar-hover2" data-total="200" data-regular="122" data-electric="78" data-total-label="סה״כ נסיעות" data-label="תלפיות מזרח · נסיעות בשבוע האחרון"><span class="bar-num" data-total="200" data-regular="122" data-electric="78">200</span><div class="bar-track"><div class="seg regular" style="width:39.1%;"></div><div class="seg electric" style="width:25.0%;"></div></div></div></td></tr>
+          <tr data-bikes="12" data-rides="140"><td class="station-name">מלחה</td>
+            <td><div class="bar-cell bar-hover2" data-total="12" data-regular="8" data-electric="4" data-total-label="סה״כ אופניים" data-label="מלחה · כמות אופניים"><span class="bar-num" data-total="12" data-regular="8" data-electric="4">12</span><div class="bar-track"><div class="seg regular" style="width:28.57%;"></div><div class="seg electric" style="width:14.29%;"></div></div></div></td>
+            <td><div class="bar-cell bar-hover2" data-total="140" data-regular="83" data-electric="57" data-total-label="סה״כ נסיעות" data-label="מלחה · נסיעות בשבוע האחרון"><span class="bar-num" data-total="140" data-regular="83" data-electric="57">140</span><div class="bar-track"><div class="seg regular" style="width:26.6%;"></div><div class="seg electric" style="width:18.27%;"></div></div></div></td></tr>
+          <tr data-bikes="18" data-rides="230"><td class="station-name">פסגת זאב</td>
+            <td><div class="bar-cell bar-hover2" data-total="18" data-regular="12" data-electric="6" data-total-label="סה״כ אופניים" data-label="פסגת זאב · כמות אופניים"><span class="bar-num" data-total="18" data-regular="12" data-electric="6">18</span><div class="bar-track"><div class="seg regular" style="width:42.86%;"></div><div class="seg electric" style="width:21.43%;"></div></div></div></td>
+            <td><div class="bar-cell bar-hover2" data-total="230" data-regular="127" data-electric="103" data-total-label="סה״כ נסיעות" data-label="פסגת זאב · נסיעות בשבוע האחרון"><span class="bar-num" data-total="230" data-regular="127" data-electric="103">230</span><div class="bar-track"><div class="seg regular" style="width:40.71%;"></div><div class="seg electric" style="width:33.01%;"></div></div></div></td></tr>
+          <tr data-bikes="5" data-rides="80"><td class="station-name">שכונת בוכרים</td>
+            <td><div class="bar-cell bar-hover2" data-total="5" data-regular="3" data-electric="2" data-total-label="סה״כ אופניים" data-label="שכונת בוכרים · כמות אופניים"><span class="bar-num" data-total="5" data-regular="3" data-electric="2">5</span><div class="bar-track"><div class="seg regular" style="width:10.71%;"></div><div class="seg electric" style="width:7.14%;"></div></div></div></td>
+            <td><div class="bar-cell bar-hover2" data-total="80" data-regular="48" data-electric="32" data-total-label="סה״כ נסיעות" data-label="שכונת בוכרים · נסיעות בשבוע האחרון"><span class="bar-num" data-total="80" data-regular="48" data-electric="32">80</span><div class="bar-track"><div class="seg regular" style="width:15.38%;"></div><div class="seg electric" style="width:10.26%;"></div></div></div></td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="legend-inline" style="margin-top:16px;">
+        <div class="item"><span class="sw" style="background:var(--teal);"></span> רגיל</div>
+        <div class="item"><span class="sw" style="background:var(--gold);"></span> חשמלי</div>
+      </div>
+    </div>
+  </section>
+  <section id="trend-malfunction">
+    <div class="section-head">
+      <div>
+        <h3><span class="num-tag">05</span> ⚠️ טרנד אופניים תקולים</h3>
+        <p class="hint">אחוז האופניים התקולים מכלל צי האופניים ברשת, לאורך זמן.</p>
+      </div>
+      <div class="segmented" id="malfPeriod"><button class="active" data-period="daily">יומי</button><button data-period="weekly">שבועי</button><button data-period="monthly">חודשי</button></div>
+    </div>
+    <div class="panel">
+      <div class="date-filter">
+        <span>הצג נתונים בין</span>
+        <input type="date" id="malfDateFrom" value="2026-07-02">
+        <span>ל-</span>
+        <input type="date" id="malfDateTo" value="2026-07-12">
+        <button type="button" class="df-apply" id="malfDateApply">החל</button>
+        <span class="df-status" id="malfDateStatus">מציג: 2/7 – 12/7</span>
+      </div>
+      <div class="trend-figure" style="margin-bottom:10px;"><span class="val num">3.2%</span><span class="delta up">+ 6.1%</span><span style="font-size:11.5px;color:var(--text-faint);">לעומת שבוע שעבר</span></div>
+      <svg class="area-chart" viewBox="0 0 700 230" preserveAspectRatio="none">
+        <g stroke="var(--border)" stroke-width="1">
+          <line x1="0" y1="40" x2="700" y2="40"/><line x1="0" y1="90" x2="700" y2="90"/>
+          <line x1="0" y1="140" x2="700" y2="140"/><line x1="0" y1="188" x2="700" y2="188"/>
+        </g>
+        <g id="malfDyn"></g>
+      </svg>
+    </div>
+  </section>
+
+  <section id="trend-empty">
+    <div class="section-head">
+      <div>
+        <h3><span class="num-tag">06</span> 🔴 טרנד תחנות ריקות</h3>
+        <p class="hint">אחוז התחנות ללא אופניים כלל, ואחוז התחנות ללא אופניים חשמליים, מכלל התחנות ברשת.</p>
+      </div>
+      <div class="segmented" id="emptyPeriod"><button class="active" data-period="daily">יומי</button><button data-period="weekly">שבועי</button><button data-period="monthly">חודשי</button></div>
+    </div>
+    <div class="panel">
+      <div class="date-filter">
+        <span>הצג נתונים בין</span>
+        <input type="date" id="emptyDateFrom" value="2026-07-02">
+        <span>ל-</span>
+        <input type="date" id="emptyDateTo" value="2026-07-12">
+        <button type="button" class="df-apply" id="emptyDateApply">החל</button>
+        <span class="df-status" id="emptyDateStatus">מציג: 2/7 – 12/7</span>
+      </div>
+      <div style="display:flex;gap:22px;flex-wrap:wrap;margin-bottom:10px;">
+        <div class="trend-figure" style="margin-bottom:0;"><span class="val num" style="font-size:20px;color:var(--red);">7%</span><span class="delta down">− 3.4%</span><span style="font-size:11.5px;color:var(--text-faint);">לעומת שבוע שעבר</span></div>
+        <div class="trend-figure" style="margin-bottom:0;"><span class="val num" style="font-size:20px;color:var(--gold-soft);">16.6%</span><span class="delta down">− 2.1%</span><span style="font-size:11.5px;color:var(--text-faint);">לעומת שבוע שעבר</span></div>
+      </div>
+      <svg class="area-chart" viewBox="0 0 700 230" preserveAspectRatio="none">
+        <g stroke="var(--border)" stroke-width="1">
+          <line x1="0" y1="40" x2="700" y2="40"/><line x1="0" y1="90" x2="700" y2="90"/>
+          <line x1="0" y1="140" x2="700" y2="140"/><line x1="0" y1="188" x2="700" y2="188"/>
+        </g>
+        <g id="emptyDyn"></g>
+      </svg>
+      <div class="legend-inline">
+        <div class="item"><span class="sw" style="background:var(--red);"></span> ללא אופניים בכלל</div>
+        <div class="item"><span class="sw" style="background:var(--gold);"></span> ללא אופניים חשמליים</div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- CHRONIC -->
+  <section id="chronic">
+    <div class="section-head">
+      <div>
+        <h3><span class="num-tag">07</span> 📋 תחנות כרוניות ללא אופניים</h3>
+        <p class="hint">תחנות שהיו ריקות מעל חצי יום בכל יום ברצף הימים האחרונים.</p>
+      </div>
+    </div>
+    <div class="filter-row">
+      <div class="segmented"><button class="active">הכל</button><button>⚡ חשמלי</button><button>🚲 רגיל</button></div>
+      <div class="num-input">מעל <input type="range" min="1" max="14" value="4" style="width:110px;" id="chronicDaysSlider"> <strong class="num" id="chronicDaysValue">4</strong> ימים</div>
+    </div>
+    <div class="chronic-grid">
+      <div class="chronic-card">
+        <div class="top"><span class="name">מחנה יהודה — שער יפו</span><span><span class="streak num">9</span> <span style="font-size:11px;color:var(--text-faint);font-weight:500;">ימים</span></span></div>
+        <div class="meta">ריקה ברציפות מ־5.7 <span style="font-size:9.5px;">ימים</span> · עדכון אחרון: היום</div>
+      </div>
+      <div class="chronic-card">
+        <div class="top"><span class="name">תלפיות — האומן</span><span><span class="streak num">6</span> <span style="font-size:11px;color:var(--text-faint);font-weight:500;">ימים</span></span></div>
+        <div class="meta">ריקה ברציפות מ־9.7 <span style="font-size:9.5px;">ימים</span> · עדכון אחרון: היום</div>
+      </div>
+      <div class="chronic-card">
+        <div class="top"><span class="name">בית הכרם — הרצל</span><span><span class="streak num">5</span> <span style="font-size:11px;color:var(--text-faint);font-weight:500;">ימים</span></span></div>
+        <div class="meta">ריקה ברציפות מ־8.7 <span style="font-size:9.5px;">ימים</span> · עדכון אחרון: היום</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DISTRIBUTION -->
+  <section id="dist">
+    <div class="section-head" style="justify-content:flex-start;">
+      <div>
+        <h3><span class="num-tag">08</span> התפלגות תחנות לפי כמות אופניים</h3>
+        <p class="hint">כמה תחנות ישנן עבור כל טווח אופניים זמינים</p>
+        <div class="segmented" style="margin-top:12px;"><button class="active">הכל</button><button>⚡ חשמלי</button><button>🚲 רגיל</button></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div style="display:flex; gap:14px;">
+        <div style="writing-mode:vertical-rl; transform:rotate(180deg); text-align:center; font-size:12px; color:var(--text-dim); white-space:nowrap; padding:4px 0; flex-shrink:0;">מספר תחנות</div>
+        <div style="flex:1; min-width:0;">
+          <div class="hist">
+            <div class="bar bar-hover" style="height:23.5%;" data-date="0 אופניים" data-total-raw="12 תחנות · 5.2% מכלל התחנות"><span class="hist-value"><span class="n">12</span><span class="p">5.2%</span></span></div>
+            <div class="bar bar-hover" style="height:54.9%;" data-date="1-2 אופניים" data-total-raw="28 תחנות · 12.1% מכלל התחנות"><span class="hist-value"><span class="n">28</span><span class="p">12.1%</span></span></div>
+            <div class="bar bar-hover" style="height:82.4%;" data-date="3-4 אופניים" data-total-raw="42 תחנות · 18.2% מכלל התחנות"><span class="hist-value"><span class="n">42</span><span class="p">18.2%</span></span></div>
+            <div class="bar bar-hover" style="height:100%;" data-date="5-6 אופניים" data-total-raw="51 תחנות · 22.1% מכלל התחנות"><span class="hist-value"><span class="n">51</span><span class="p">22.1%</span></span></div>
+            <div class="bar bar-hover" style="height:90.2%;" data-date="7-8 אופניים" data-total-raw="46 תחנות · 19.9% מכלל התחנות"><span class="hist-value"><span class="n">46</span><span class="p">19.9%</span></span></div>
+            <div class="bar bar-hover" style="height:66.7%;" data-date="9-10 אופניים" data-total-raw="34 תחנות · 14.7% מכלל התחנות"><span class="hist-value"><span class="n">34</span><span class="p">14.7%</span></span></div>
+            <div class="bar bar-hover" style="height:35.3%;" data-date="11+ אופניים" data-total-raw="18 תחנות · 7.8% מכלל התחנות"><span class="hist-value"><span class="n">18</span><span class="p">7.8%</span></span></div>
+          </div>
+          <div class="skyline-labels" style="margin-top:10px; direction:ltr;">
+            <span>0</span><span>1-2</span><span>3-4</span><span>5-6</span><span>7-8</span><span>9-10</span><span>11+</span>
+          </div>
+          <div style="text-align:center; font-size:12px; color:var(--text-dim); margin-top:10px;">מספר אופניים בתחנה</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AVG / MEDIAN -->
+  <section id="avg-median" style="padding-bottom:20px;">
+    <div class="section-head">
+      <div>
+        <h3><span class="num-tag">09</span> 📉 ממוצע/חציון אופניים לתחנה לאורך זמן</h3>
+        <p class="hint">ממוצע וחציון של מספר האופניים הזמינים לתחנה ביום נתון, על פני כל התחנות ברשת.</p>
+      </div>
+      <div class="segmented" id="avgPeriod"><button class="active" data-period="daily">יומי</button><button data-period="weekly">שבועי</button><button data-period="monthly">חודשי</button></div>
+    </div>
+    <div class="panel">
+      <div class="date-filter">
+        <span>הצג נתונים בין</span>
+        <input type="date" id="avgDateFrom" value="2026-07-02">
+        <span>ל-</span>
+        <input type="date" id="avgDateTo" value="2026-07-12">
+        <button type="button" class="df-apply" id="avgDateApply">החל</button>
+        <span class="df-status" id="avgDateStatus">מציג: 2/7 – 12/7</span>
+      </div>
+      <svg class="area-chart" viewBox="0 0 700 230" preserveAspectRatio="none">
+        <g stroke="var(--border)" stroke-width="1">
+          <line x1="0" y1="40" x2="700" y2="40"/><line x1="0" y1="90" x2="700" y2="90"/>
+          <line x1="0" y1="140" x2="700" y2="140"/><line x1="0" y1="188" x2="700" y2="188"/>
+        </g>
+        <g id="avgDyn"></g>
+      </svg>
+      <div class="legend-inline">
+        <div class="item"><span class="sw" style="background:var(--gold);"></span> ממוצע</div>
+        <div class="item"><span class="sw" style="background:var(--slate);"></span> חציון</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="chart-tooltip" id="chartTooltip" hidden>
+  <div class="tt-date" id="ttDate"></div>
+  <div class="tt-row"><span class="tt-dot" id="ttRegularDot" style="background:var(--teal);"></span><span id="ttRegularLabel">רגיל</span><b id="ttRegular"></b></div>
+  <div class="tt-row"><span class="tt-dot" id="ttElectricDot" style="background:var(--gold);"></span><span id="ttElectricLabel">חשמלי</span><b id="ttElectric"></b></div>
+  <div class="tt-total" id="ttTotal"></div>
+</div>
+
+<footer>
+  הצעת עיצוב חלופית לדשבורד ירופאן מוניטור · Heebo · נתונים לדוגמה בלבד
+</footer>
+
+<script>
+  var stations = [
+    {x:120,y:120,c:'var(--teal)', name:'תחנה מרכזית — כניסה דרומית', bikes:'28'},
+    {x:180,y:90,c:'var(--teal)', name:'גבעת רם — הר הצופים', bikes:'24'},
+    {x:240,y:160,c:'var(--red)', name:'מחנה יהודה — שער יפו', bikes:'0'},
+    {x:300,y:110,c:'var(--teal)', name:'כיכר ציון', bikes:'14'},
+    {x:340,y:200,c:'var(--gold)', name:'עמק רפאים', bikes:'6 ✡'},
+    {x:380,y:80,c:'var(--teal)', name:'רחביה — כיכר דניה', bikes:'17'},
+    {x:420,y:150,c:'var(--text-faint)', name:'הר הצופים — תצפית', bikes:'מושבתת'},
+    {x:460,y:230,c:'var(--teal)', name:'גן סאקר', bikes:'9'},
+    {x:500,y:120,c:'var(--red)', name:'קטמון — רחוב הפלמ״ח', bikes:'6'},
+    {x:540,y:190,c:'var(--teal)', name:'תלפיות — האומן', bikes:'11'},
+    {x:200,y:250,c:'var(--teal)', name:'בית הכרם — הרצל', bikes:'13'},
+    {x:260,y:300,c:'var(--gold)', name:'רחוב יפו — מרכז העיר', bikes:'8 ✡'},
+    {x:340,y:330,c:'var(--teal)', name:'ימין משה', bikes:'10'},
+    {x:400,y:280,c:'var(--red)', name:'ארמון הנציב', bikes:'0'},
+    {x:460,y:340,c:'var(--teal)', name:'תלפיות מזרח', bikes:'15'},
+    {x:150,y:320,c:'var(--teal)', name:'מלחה', bikes:'12'},
+    {x:560,y:280,c:'var(--teal)', name:'פסגת זאב', bikes:'18'},
+    {x:110,y:200,c:'var(--gold)', name:'שכונת בוכרים', bikes:'5 ✡'}
+  ];
+
+  // generate station pulse dots on the map
+  (function(){
+    var svg = document.getElementById('stationDots');
+    stations.forEach(function(s, i){
+      var ring = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      ring.setAttribute('cx', s.x); ring.setAttribute('cy', s.y); ring.setAttribute('r', 5);
+      ring.setAttribute('fill', 'none'); ring.setAttribute('stroke', s.c); ring.setAttribute('stroke-width', 1.4);
+      ring.setAttribute('opacity', 0.6);
+      var anim = document.createElementNS('http://www.w3.org/2000/svg','animate');
+      anim.setAttribute('attributeName','r'); anim.setAttribute('values','3;11;3'); anim.setAttribute('dur', (2 + (i%4)*0.3)+'s');
+      anim.setAttribute('repeatCount','indefinite');
+      var animO = document.createElementNS('http://www.w3.org/2000/svg','animate');
+      animO.setAttribute('attributeName','opacity'); animO.setAttribute('values','0.6;0;0'); animO.setAttribute('dur', (2 + (i%4)*0.3)+'s');
+      animO.setAttribute('repeatCount','indefinite');
+      ring.appendChild(anim); ring.appendChild(animO);
+      svg.appendChild(ring);
+
+      var dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      dot.setAttribute('cx', s.x); dot.setAttribute('cy', s.y); dot.setAttribute('r', 4.5);
+      dot.setAttribute('fill', s.c);
+      svg.appendChild(dot);
+
+      var selectRing = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      selectRing.setAttribute('cx', s.x); selectRing.setAttribute('cy', s.y); selectRing.setAttribute('r', 10);
+      selectRing.setAttribute('fill', 'none'); selectRing.setAttribute('stroke', 'var(--text)');
+      selectRing.setAttribute('stroke-width', 2); selectRing.setAttribute('opacity', 0);
+      selectRing.style.transition = 'opacity .25s ease';
+      svg.appendChild(selectRing);
+      s.selectRing = selectRing;
+    });
+  })();
+
+  // ---- reusable station search widget ----
+  function setupStationSearch(opts){
+    var input = document.getElementById(opts.inputId);
+    var dropdown = document.getElementById(opts.dropdownId);
+    var clearBtn = document.getElementById(opts.clearBtnId);
+    var wrap = document.getElementById(opts.wrapId);
+    if (!input || !dropdown || !clearBtn || !wrap) return;
+
+    clearBtn.hidden = input.value.length === 0;
+
+    function renderDropdown(query){
+      var q = (query || '').trim();
+      var matches = stations.filter(function(s){ return s.name.indexOf(q) !== -1; });
+      dropdown.innerHTML = '';
+      if (matches.length === 0){
+        var empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = 'לא נמצאה תחנה בשם הזה';
+        dropdown.appendChild(empty);
+        return;
+      }
+      matches.forEach(function(s){
+        var opt = document.createElement('div');
+        opt.className = 'opt';
+        opt.innerHTML = '<span>' + s.name + '</span>' +
+          '<span class="status"><span class="sw" style="background:' + s.c + ';"></span>' + s.bikes + '</span>';
+        opt.addEventListener('click', function(){
+          input.value = s.name;
+          clearBtn.hidden = false;
+          closeDropdown();
+          if (opts.onSelect) opts.onSelect(s);
+        });
+        dropdown.appendChild(opt);
+      });
+    }
+
+    function openDropdown(){
+      dropdown.hidden = false;
+      renderDropdown(input.value);
+    }
+    function closeDropdown(){
+      dropdown.hidden = true;
+    }
+
+    input.addEventListener('focus', openDropdown);
+    input.addEventListener('click', openDropdown);
+    input.addEventListener('input', function(){
+      clearBtn.hidden = input.value.length === 0;
+      openDropdown();
+    });
+    clearBtn.addEventListener('click', function(){
+      input.value = '';
+      clearBtn.hidden = true;
+      input.focus();
+      openDropdown();
+    });
+    document.addEventListener('click', function(e){
+      if (!wrap.contains(e.target)) closeDropdown();
+    });
+  }
+
+  function clearMapHighlights(){
+    stations.forEach(function(s){ s.selectRing.setAttribute('opacity', 0); });
+  }
+
+  setupStationSearch({
+    inputId:'stationSearchInput', dropdownId:'stationDropdown',
+    clearBtnId:'stationSearchClear', wrapId:'mapSearch',
+    onSelect:function(s){
+      clearMapHighlights();
+      s.selectRing.setAttribute('opacity', 1);
+      setTimeout(function(){ s.selectRing.setAttribute('opacity', 0); }, 2600);
+    }
+  });
+
+  setupStationSearch({
+    inputId:'stationChartSearchInput', dropdownId:'stationChartDropdown',
+    clearBtnId:'stationChartSearchClear', wrapId:'stationChartSearch'
+  });
+
+  // ---- ranking table sort ----
+  (function(){
+    var sortBtns = document.querySelectorAll('#rankingSort button');
+    var tbody = document.getElementById('rankingBody');
+    if (!tbody) return;
+
+    function applySort(btn){
+      var key = btn.getAttribute('data-sort') === 'rides' ? 'rides' : 'bikes';
+      var dir = btn.getAttribute('data-dir') === 'asc' ? 'asc' : 'desc';
+      btn.querySelector('.arrow').textContent = dir === 'asc' ? '↑' : '↓';
+      var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+      rows.sort(function(a, b){
+        var av = parseInt(a.getAttribute('data-' + key), 10);
+        var bv = parseInt(b.getAttribute('data-' + key), 10);
+        return dir === 'asc' ? av - bv : bv - av;
+      });
+      rows.forEach(function(r){ tbody.appendChild(r); });
+    }
+
+    sortBtns.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        if (btn.classList.contains('active')){
+          // already the active sort column: flip direction
+          btn.setAttribute('data-dir', btn.getAttribute('data-dir') === 'asc' ? 'desc' : 'asc');
+        } else {
+          sortBtns.forEach(function(b){ b.classList.remove('active'); });
+          btn.classList.add('active');
+        }
+        applySort(btn);
+      });
+    });
+  })();
+
+  // ---- compact nav dropdown ----
+  (function(){
+    var wrap = document.getElementById('navDropdown');
+    var btn = document.getElementById('navDropdownBtn');
+    var menu = document.getElementById('navDropdownMenu');
+    if (!wrap || !btn || !menu) return;
+
+    var isOpen = false;
+    function closeMenu(){
+      menu.style.display = 'none';
+      wrap.classList.remove('open');
+      isOpen = false;
+    }
+    function openMenu(){
+      menu.style.display = 'flex';
+      wrap.classList.add('open');
+      isOpen = true;
+    }
+    closeMenu();
+
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      if (isOpen) closeMenu(); else openMenu();
+    });
+    menu.querySelectorAll('a').forEach(function(a){
+      a.addEventListener('click', function(e){
+        e.preventDefault();
+        var targetId = a.getAttribute('data-target');
+        var target = document.getElementById(targetId);
+        closeMenu();
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+    document.addEventListener('click', function(e){
+      if (!wrap.contains(e.target)) closeMenu();
+    });
+  })();
+
+  // ---- chronic stations day-threshold slider ----
+  (function(){
+    var slider = document.getElementById('chronicDaysSlider');
+    var value = document.getElementById('chronicDaysValue');
+    if (!slider || !value) return;
+    slider.addEventListener('input', function(){
+      value.textContent = slider.value;
+    });
+  })();
+
+  // ---- date-range filters (graphs 02 & 03) ----
+  (function(){
+    function formatDMY(isoStr){
+      var parts = isoStr.split('-');
+      if (parts.length !== 3) return isoStr;
+      var d = parseInt(parts[2], 10);
+      var m = parseInt(parts[1], 10);
+      return d + '/' + m;
+    }
+
+    function wireDateFilter(fromId, toId, btnId, statusId){
+      var fromEl = document.getElementById(fromId);
+      var toEl = document.getElementById(toId);
+      var btn = document.getElementById(btnId);
+      var status = document.getElementById(statusId);
+      if (!fromEl || !toEl || !btn || !status) return;
+      btn.addEventListener('click', function(){
+        if (!fromEl.value || !toEl.value) return;
+        if (fromEl.value > toEl.value){
+          status.textContent = 'טווח לא תקין — תאריך ההתחלה מאוחר מתאריך הסיום';
+          status.style.color = 'var(--red)';
+          return;
+        }
+        status.style.color = '';
+        status.textContent = 'מציג: ' + formatDMY(fromEl.value) + ' – ' + formatDMY(toEl.value);
+      });
+    }
+
+    wireDateFilter('stationDateFrom', 'stationDateTo', 'stationDateApply', 'stationDateStatus');
+    wireDateFilter('ridesDateFrom', 'ridesDateTo', 'ridesDateApply', 'ridesDateStatus');
+    wireDateFilter('malfDateFrom', 'malfDateTo', 'malfDateApply', 'malfDateStatus');
+    wireDateFilter('emptyDateFrom', 'emptyDateTo', 'emptyDateApply', 'emptyDateStatus');
+    wireDateFilter('avgDateFrom', 'avgDateTo', 'avgDateApply', 'avgDateStatus');
+  })();
+
+  // ---- ranking table type filter (all / electric / regular) ----
+  (function(){
+    var filterBtns = document.querySelectorAll('#rankingTypeFilter button');
+    var table = document.querySelector('table.ranking');
+    if (!table) return;
+
+    function applyFilter(type){
+      table.classList.remove('filter-electric', 'filter-regular');
+      if (type === 'electric') table.classList.add('filter-electric');
+      if (type === 'regular') table.classList.add('filter-regular');
+
+      table.querySelectorAll('.bar-num').forEach(function(el){
+        if (type === 'electric'){
+          el.textContent = el.getAttribute('data-electric');
+        } else if (type === 'regular'){
+          el.textContent = el.getAttribute('data-regular');
+        } else {
+          el.textContent = el.getAttribute('data-total');
+        }
+      });
+    }
+
+    filterBtns.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        filterBtns.forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        applyFilter(btn.getAttribute('data-type'));
+      });
+    });
+  })();
+
+  // ---- chart hover tooltips ----
+  (function(){
+    var tooltip = document.getElementById('chartTooltip');
+    var ttDate = document.getElementById('ttDate');
+    var ttRegular = document.getElementById('ttRegular');
+    var ttElectric = document.getElementById('ttElectric');
+    var ttRegularLabel = document.getElementById('ttRegularLabel');
+    var ttElectricLabel = document.getElementById('ttElectricLabel');
+    var ttRegularDot = document.getElementById('ttRegularDot');
+    var ttElectricDot = document.getElementById('ttElectricDot');
+    var ttTotal = document.getElementById('ttTotal');
+
+    function showTooltip(el, evt){
+      var d = el.dataset;
+      ttDate.textContent = d.date || d.label || '';
+      var hasSplit = (d.regular !== undefined) || (d.electric !== undefined);
+      ttRegular.parentElement.style.display = hasSplit ? 'flex' : 'none';
+      ttElectric.parentElement.style.display = hasSplit ? 'flex' : 'none';
+      ttRegular.textContent = d.regular || '—';
+      ttElectric.textContent = d.electric || '—';
+      ttRegularLabel.textContent = d.regularLabel || 'רגיל';
+      ttElectricLabel.textContent = d.electricLabel || 'חשמלי';
+      ttRegularDot.style.background = d.regularColor ? 'var(--' + d.regularColor + ')' : 'var(--teal)';
+      ttElectricDot.style.background = d.electricColor ? 'var(--' + d.electricColor + ')' : 'var(--gold)';
+      if (d.total || d.totalRaw){
+        ttTotal.hidden = false;
+        ttTotal.textContent = d.totalRaw || ((d.totalLabel || 'סה״כ נסיעות') + ': ' + d.total);
+      } else {
+        ttTotal.hidden = true;
+      }
+      tooltip.hidden = false;
+      moveTooltip(evt);
+    }
+
+    function moveTooltip(evt){
+      var pad = 14;
+      var x = evt.clientX + pad;
+      var y = evt.clientY + pad;
+      var rect = tooltip.getBoundingClientRect();
+      if (x + rect.width > window.innerWidth - 10) x = evt.clientX - rect.width - pad;
+      if (y + rect.height > window.innerHeight - 10) y = evt.clientY - rect.height - pad;
+      tooltip.style.left = x + 'px';
+      tooltip.style.top = y + 'px';
+    }
+
+    function hideTooltip(){
+      tooltip.hidden = true;
+    }
+
+    var HOVER_SEL = '.hover-band, .bar-hover, .bar-hover2';
+    var currentHoverEl = null;
+
+    document.addEventListener('mouseover', function(evt){
+      var el = evt.target.closest ? evt.target.closest(HOVER_SEL) : null;
+      if (el) { currentHoverEl = el; showTooltip(el, evt); }
+    });
+    document.addEventListener('mousemove', function(evt){
+      if (currentHoverEl) moveTooltip(evt);
+    });
+    document.addEventListener('mouseout', function(evt){
+      var el = evt.target.closest ? evt.target.closest(HOVER_SEL) : null;
+      if (el && (!evt.relatedTarget || !el.contains(evt.relatedTarget))) {
+        currentHoverEl = null;
+        hideTooltip();
+      }
+    });
+  })();
+
+  // ---- rides chart type toggle (bars / line) ----
+  (function(){
+    var chartTypeBtns = document.querySelectorAll('#ridesChartType button');
+    var barsView = document.getElementById('ridesBarsView');
+    var lineView = document.getElementById('ridesLineView');
+    chartTypeBtns.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        chartTypeBtns.forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        var view = btn.getAttribute('data-view');
+        barsView.hidden = view !== 'bars';
+        lineView.hidden = view !== 'line';
+      });
+    });
+  })();
+
+  // ---- station chart type toggle (line / bars) ----
+  (function(){
+    var chartTypeBtns = document.querySelectorAll('#stationChartType button');
+    var barsView = document.getElementById('stationBarsView');
+    var lineView = document.getElementById('stationLineView');
+    if (!barsView || !lineView) return;
+    chartTypeBtns.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        chartTypeBtns.forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        var view = btn.getAttribute('data-view');
+        barsView.hidden = view !== 'bars';
+        lineView.hidden = view !== 'line';
+      });
+    });
+  })();
+
+  // ================= PERIOD-SWITCHING CHART ENGINE =================
+  (function(){
+    var PERIOD_LABELS = {
+      hourly:  ["00:00","02:00","04:00","06:00","08:00","10:00","12:00","14:00","16:00","18:00","20:00","22:00"],
+      weekly:  ["7/6","14/6","21/6","28/6","5/7","12/7"],
+      monthly: ["פבר׳","מרץ","אפר׳","מאי","יוני","יולי"]
+    };
+
+    var DATA = {
+      station: {
+        daily:   { labels:["30/6","1/7","2/7","3/7","4/7","5/7","6/7","7/7","8/7","9/7","10/7","11/7","12/7"], sunday:[5,12],
+                   a:[8,14,6,20,16,26,22,28,19,24,17,26,23], b:[2,4,1,8,5,10,7,12,6,9,4,10,8] },
+        hourly:  { a:[18,15,12,14,20,23,25,24,26,25,24,23], b:[6,5,4,5,7,8,9,8,9,8,8,8] },
+        weekly:  { a:[12,15,14,18,20,23], b:[4,5,5,6,7,8] },
+        monthly: { a:[10,12,14,16,19,21], b:[3,4,5,6,7,8] }
+      },
+      rides: {
+        daily:   { labels:["29/6","30/6","1/7","2/7","3/7","4/7","5/7","6/7","7/7","8/7","9/7","10/7","11/7","12/7"], sunday:[6,13],
+                   a:[150,169,150,223,228,208,189,220,226,219,184,148,181,209], b:[100,138,81,161,228,128,89,203,254,146,104,63,136,185] },
+        hourly:  { a:[40,25,15,10,35,90,140,120,100,150,130,80], b:[20,10,8,5,20,60,90,80,70,100,85,55] },
+        weekly:  { a:[1200,1350,1280,1500,1650,1780], b:[700,780,820,900,980,1050] },
+        monthly: { a:[4800,5200,5600,6000,6500,7100], b:[2600,2900,3200,3500,3800,4100] }
+      },
+      malf: {
+        daily:   { labels:["2/7","3/7","4/7","5/7","6/7","7/7","8/7","9/7","10/7","11/7","12/7"], sunday:[3,10],
+                   a:[2.9,2.76,3.02,3.2,3.09,3.35,3.24,3.46,3.31,3.54,3.39] },
+        hourly:  { a:[2.8,2.7,2.6,2.9,3.1,3.3,3.5,3.6,3.4,3.3,3.2,3.1] },
+        weekly:  { a:[2.5,2.7,2.9,3.0,3.2,3.4] },
+        monthly: { a:[2.0,2.3,2.6,2.8,3.0,3.2] }
+      },
+      empty: {
+        daily:   { labels:["2/7","3/7","4/7","5/7","6/7","7/7","8/7","9/7","10/7","11/7","12/7"], sunday:[3,10],
+                   a:[9.52,8.23,9.09,6.93,7.79,6.06,7.36,5.19,6.49,4.33,5.63], b:[19.91,18.61,21.21,16.88,18.18,15.58,17.32,13.42,16.02,11.69,14.29] },
+        hourly:  { a:[8,7.5,7,7.8,8.5,9,9.5,9,8.5,8,7.5,7], b:[17,16,15.5,16.5,18,19,20,19,18,17,16,15] },
+        weekly:  { a:[10,9,8.5,7.5,7,6], b:[22,20,19,17,15.5,14] },
+        monthly: { a:[13,11,10,9,8,7], b:[26,23,21,19,17,15] }
+      },
+      avg: {
+        daily:   { labels:["2/7","3/7","4/7","5/7","6/7","7/7","8/7","9/7","10/7","11/7","12/7"], sunday:[3,10],
+                   a:[13.0,14.0,12.0,15.0,13.4,17.0,15.4,19.0,17.4,20.0,18.6], b:[9.8,10.1,9.0,11.1,10.1,12.1,11.4,13.9,13.1,15.0,14.4] },
+        hourly:  { a:[12,11,10,11,13,16,18,17,18,17,16,15], b:[9,8,7,8,10,12,13,13,13,12,11,11] },
+        weekly:  { a:[11,12,13,15,16,18], b:[8,9,9.5,10.5,11,12.5] },
+        monthly: { a:[9,10,11,13,15,17], b:[6,7,8,9,10,11.5] }
+      }
+    };
+
+    function getPeriodData(chartKey, period){
+      var d = DATA[chartKey][period];
+      var labels = d.labels || PERIOD_LABELS[period];
+      var sunday = d.sunday || [];
+      return { labels: labels, sunday: sunday, a: d.a, b: d.b || null };
+    }
+
+    function xPositions(n){
+      var xs = [];
+      for (var i = 0; i < n; i++){
+        xs.push(i === n - 1 ? 698 : Math.round((i / (n - 1)) * 700 * 10) / 10);
+      }
+      return xs;
+    }
+
+    function fmt(v, decimals){
+      var r = Math.round(v * Math.pow(10, decimals)) / Math.pow(10, decimals);
+      return decimals === 0 ? String(Math.round(r)) : String(r);
+    }
+
+    // Builds innerHTML for a dynamic <g> in a line/area chart (1 or 2 series).
+    function buildLineChartHTML(cfg){
+      var labels = cfg.labels, sunday = cfg.sunday, n = labels.length;
+      var xs = xPositions(n);
+      var allVals = cfg.series[0].values.concat(cfg.series[1] ? cfg.series[1].values : []);
+      var lo = Math.min.apply(null, allVals), hi = Math.max.apply(null, allVals);
+      if (lo === hi) { lo -= 1; hi += 1; }
+      var pad = (hi - lo) * 0.12;
+      lo -= pad; hi += pad;
+      var yTop = cfg.yTop, yBottom = cfg.yBottom;
+      function yOf(v){ return Math.round((yBottom - ((v - lo) / (hi - lo)) * (yBottom - yTop)) * 10) / 10; }
+
+      var html = '';
+
+      // week markers
+      if (sunday && sunday.length){
+        html += '<g stroke="var(--gold)" stroke-width="1.3" stroke-dasharray="3 4" opacity="0.55">';
+        sunday.forEach(function(idx){
+          var x = xs[idx];
+          html += '<line x1="' + x + '" y1="10" x2="' + x + '" y2="' + yBottom + '"/>';
+        });
+        html += '</g><g fill="var(--gold)" font-family="Heebo" font-size="11" font-weight="700">';
+        sunday.forEach(function(idx){
+          html += '<text x="' + xs[idx] + '" y="15" text-anchor="middle">א׳</text>';
+        });
+        html += '</g>';
+      }
+
+      // fills + lines
+      cfg.series.forEach(function(s){
+        if (s.fill){
+          var pts = xs.map(function(x,i){ return x + ',' + yOf(s.values[i]); }).join(' ');
+          html += '<path d="M' + pts.replace(/ /g,' L') + ' L' + xs[n-1] + ',' + yBottom + ' L' + xs[0] + ',' + yBottom + ' Z" fill="' + s.fill + '"/>';
+        }
+      });
+      cfg.series.forEach(function(s){
+        var pts = xs.map(function(x,i){ return x + ',' + yOf(s.values[i]); }).join(' ');
+        var dash = s.dashed ? ' stroke-dasharray="5 5"' : '';
+        html += '<polyline points="' + pts + '" fill="none" stroke="' + s.color + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"' + dash + '/>';
+      });
+
+      // point labels
+      cfg.series.forEach(function(s){
+        html += '<g>';
+        xs.forEach(function(x, i){
+          var y = yOf(s.values[i]);
+          var anchor = i === 0 ? 'start' : (i === n-1 ? 'end' : 'middle');
+          var tx = i === 0 ? x + 3 : (i === n-1 ? x - 3 : x);
+          html += '<circle cx="' + x + '" cy="' + y + '" r="3" fill="' + s.color + '"/>' +
+                  '<text x="' + tx + '" y="' + (y - 9) + '" text-anchor="' + anchor + '" font-family="Heebo" font-size="10" font-weight="700" fill="' + s.color + '">' +
+                  fmt(s.values[i], s.decimals) + (s.suffix||'') + '</text>';
+        });
+        html += '</g>';
+      });
+
+      // x-axis labels
+      html += '<g font-family="Heebo" font-size="10.5" fill="var(--text-faint)">';
+      xs.forEach(function(x, i){
+        var anchor = i === 0 ? 'start' : (i === n-1 ? 'end' : 'middle');
+        var isSun = sunday.indexOf(i) !== -1;
+        var style = isSun ? ' fill="var(--gold)" font-weight="700"' : '';
+        html += '<text x="' + (i===n-1?700:x) + '" y="' + cfg.xAxisY + '" text-anchor="' + anchor + '"' + style + '>' + labels[i] + '</text>';
+      });
+      html += '</g>';
+
+      // hover bands
+      var mids = []; for (var i = 0; i < n - 1; i++) mids.push((xs[i] + xs[i+1]) / 2);
+      var bounds = [0].concat(mids).concat([700]);
+      html += '<g class="hover-layer">';
+      for (var i = 0; i < n; i++){
+        var w = Math.round((bounds[i+1] - bounds[i]) * 10) / 10;
+        var dateLabel = labels[i] + (sunday.indexOf(i) !== -1 ? ' · א׳' : '');
+        if (cfg.series.length === 2){
+          var s0 = cfg.series[0], s1 = cfg.series[1];
+          html += '<rect class="hover-band" x="' + Math.round(bounds[i]*10)/10 + '" y="0" width="' + w + '" height="' + (yBottom+42) + '" data-date="' + dateLabel + '" ' +
+            'data-regular="' + fmt(s0.values[i], s0.decimals) + (s0.suffix||'') + '" data-regular-label="' + (s0.tooltipLabel||'רגיל') + '" data-regular-color="' + (s0.colorName||'teal') + '" ' +
+            'data-electric="' + fmt(s1.values[i], s1.decimals) + (s1.suffix||'') + '" data-electric-label="' + (s1.tooltipLabel||'חשמלי') + '" data-electric-color="' + (s1.colorName||'gold') + '"/>';
+        } else {
+          var s0 = cfg.series[0];
+          html += '<rect class="hover-band" x="' + Math.round(bounds[i]*10)/10 + '" y="0" width="' + w + '" height="' + (yBottom+42) + '" data-date="' + dateLabel + '" ' +
+            'data-total="' + fmt(s0.values[i], s0.decimals) + (s0.suffix||'') + '" data-total-label="' + (cfg.totalLabel||'ערך') + '"/>';
+        }
+      }
+      html += '</g>';
+
+      return html;
+    }
+
+    // Builds innerHTML for the .skyline bar chart (station/rides bars view)
+    function buildBarsHTML(labels, sunday, a, b){
+      var n = labels.length;
+      var totals = a.map(function(v,i){ return v + b[i]; });
+      var maxT = Math.max.apply(null, totals);
+      var html = '';
+      for (var i = 0; i < n; i++){
+        var total = totals[i];
+        var h = maxT ? Math.round((total / maxT) * 1000) / 10 : 0;
+        var regPct = total ? Math.round((a[i] / total) * 10000) / 100 : 0;
+        var elecPct = total ? Math.round((b[i] / total) * 10000) / 100 : 0;
+        var isSun = sunday.indexOf(i) !== -1;
+        var dateLabel = labels[i] + (isSun ? ' · א׳' : '');
+        html += '<div class="col bar-hover" style="height:' + h + '%;" data-date="' + dateLabel + '" data-regular="' + fmt(a[i],0) + '" data-electric="' + fmt(b[i],0) + '" data-total="' + fmt(total,0) + '">' +
+          '<span class="bar-value">' + fmt(total,0) + '</span>' +
+          '<div class="bar-fill"><div class="seg regular" style="height:' + regPct + '%;"></div><div class="seg electric" style="height:' + elecPct + '%;"></div></div></div>';
+      }
+      if (sunday.length){
+        sunday.forEach(function(idx){
+          var pct = Math.round(((idx + 0.5) / n) * 10000) / 100;
+          html += '<div class="week-marker" style="left:' + pct + '%;"></div><div class="wm-label" style="left:' + pct + '%;">א׳</div>';
+        });
+      }
+      return html;
+    }
+
+    function buildBarsLabelsHTML(labels, sunday){
+      return labels.map(function(l, i){
+        var isSun = sunday.indexOf(i) !== -1;
+        return isSun ? '<span style="color:var(--gold);font-weight:700;">' + l + '</span>' : '<span>' + l + '</span>';
+      }).join('');
+    }
+
+    // ---- STATION chart update ----
+    function updateStation(period){
+      var d = getPeriodData('station', period);
+      var lineHTML = buildLineChartHTML({
+        labels: d.labels, sunday: d.sunday, yTop: 45, yBottom: 188, xAxisY: 215,
+        series: [
+          { values: d.a, color: 'var(--teal)', decimals: 0, fill: 'url(#fillTeal)', tooltipLabel:'רגיל', colorName:'teal' },
+          { values: d.b, color: 'var(--gold)', decimals: 0, fill: 'url(#fillGold)', tooltipLabel:'חשמלי', colorName:'gold' }
+        ]
+      });
+      var dyn = document.getElementById('stationChartDyn');
+      if (dyn) dyn.innerHTML = lineHTML;
+
+      var barsHTML = buildBarsHTML(d.labels, d.sunday, d.a, d.b);
+      var skyline = document.getElementById('stationSkyline');
+      if (skyline) skyline.innerHTML = barsHTML;
+      var labelsEl = document.getElementById('stationSkylineLabels');
+      if (labelsEl) labelsEl.innerHTML = buildBarsLabelsHTML(d.labels, d.sunday);
+    }
+
+    // ---- RIDES chart update ----
+    function updateRides(period){
+      var d = getPeriodData('rides', period);
+      var lineHTML = buildLineChartHTML({
+        labels: d.labels, sunday: d.sunday, yTop: 45, yBottom: 188, xAxisY: 215,
+        series: [
+          { values: d.a, color: 'var(--teal)', decimals: 0, tooltipLabel:'רגיל', colorName:'teal' },
+          { values: d.b, color: 'var(--gold)', decimals: 0, tooltipLabel:'חשמלי', colorName:'gold' }
+        ]
+      });
+      var dyn = document.getElementById('ridesLineDyn');
+      if (dyn) dyn.innerHTML = lineHTML;
+
+      var barsHTML = buildBarsHTML(d.labels, d.sunday, d.a, d.b);
+      var skyline = document.getElementById('ridesSkyline');
+      if (skyline) skyline.innerHTML = barsHTML;
+      var labelsEl = document.getElementById('ridesSkylineLabels');
+      if (labelsEl) labelsEl.innerHTML = buildBarsLabelsHTML(d.labels, d.sunday);
+    }
+
+    // ---- MALFUNCTION chart update ----
+    function updateMalf(period){
+      var d = getPeriodData('malf', period);
+      var html = buildLineChartHTML({
+        labels: d.labels, sunday: d.sunday, yTop: 45, yBottom: 188, xAxisY: 215,
+        series: [ { values: d.a, color: 'var(--red)', decimals: 1, suffix: '%' } ],
+        totalLabel: 'אחוז תקולים'
+      });
+      var dyn = document.getElementById('malfDyn');
+      if (dyn) dyn.innerHTML = html;
+    }
+
+    // ---- EMPTY STATIONS chart update ----
+    function updateEmpty(period){
+      var d = getPeriodData('empty', period);
+      var html = buildLineChartHTML({
+        labels: d.labels, sunday: d.sunday, yTop: 45, yBottom: 188, xAxisY: 215,
+        series: [
+          { values: d.a, color: 'var(--red)', decimals: 1, suffix: '%', tooltipLabel:'ללא אופניים בכלל', colorName:'red' },
+          { values: d.b, color: 'var(--gold)', decimals: 1, suffix: '%', tooltipLabel:'ללא אופניים חשמליים', colorName:'gold' }
+        ]
+      });
+      var dyn = document.getElementById('emptyDyn');
+      if (dyn) dyn.innerHTML = html;
+    }
+
+    // ---- AVG/MEDIAN chart update ----
+    function updateAvg(period){
+      var d = getPeriodData('avg', period);
+      var html = buildLineChartHTML({
+        labels: d.labels, sunday: d.sunday, yTop: 45, yBottom: 188, xAxisY: 215,
+        series: [
+          { values: d.a, color: 'var(--gold)', decimals: 1, tooltipLabel:'ממוצע', colorName:'gold' },
+          { values: d.b, color: 'var(--slate)', decimals: 1, dashed:true, tooltipLabel:'חציון', colorName:'slate' }
+        ]
+      });
+      var dyn = document.getElementById('avgDyn');
+      if (dyn) dyn.innerHTML = html;
+    }
+
+    function wirePeriodToggle(groupId, updateFn){
+      var group = document.getElementById(groupId);
+      if (!group) return;
+      var btns = group.querySelectorAll('button');
+      btns.forEach(function(btn){
+        btn.addEventListener('click', function(){
+          btns.forEach(function(b){ b.classList.remove('active'); });
+          btn.classList.add('active');
+          updateFn(btn.getAttribute('data-period'));
+        });
+      });
+    }
+
+    wirePeriodToggle('stationPeriod', updateStation);
+    wirePeriodToggle('ridesPeriod', updateRides);
+    wirePeriodToggle('malfPeriod', updateMalf);
+    wirePeriodToggle('emptyPeriod', updateEmpty);
+    wirePeriodToggle('avgPeriod', updateAvg);
+
+    // Initial render (daily view, matching the active button on load)
+    updateStation('daily');
+    updateRides('daily');
+    updateMalf('daily');
+    updateEmpty('daily');
+    updateAvg('daily');
+  })();
+
+</script>
+
+</body>
+</html>

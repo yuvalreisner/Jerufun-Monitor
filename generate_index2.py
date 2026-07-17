@@ -1,0 +1,732 @@
+#!/usr/bin/env python3
+"""
+Generates index2.html from jerufun-redesign-proposal.html
+populated with real data from jerufun.db.
+"""
+import os
+import re
+import json
+import sqlite3
+import urllib.request
+import base64
+from datetime import datetime, timedelta
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# ── DB helpers (inline to avoid import issues) ──────────────────────────────
+import sys
+sys.path.insert(0, BASE_DIR)
+
+try:
+    import pandas as pd
+    from db import (
+        get_latest_snapshot, get_daily_rides, get_shortage_leaderboard,
+        get_daily_network_summary
+    )
+    from config import DB_PATH, BLACKLIST_STATIONS, SHABBAT_STATIONS
+    HAS_PANDAS = True
+except ImportError:
+    HAS_PANDAS = False
+    print("pandas not found — activate venv first")
+    sys.exit(1)
+
+
+# ── Utilities ────────────────────────────────────────────────────────────────
+_BL_SQL = ','.join(f"'{s}'" for s in BLACKLIST_STATIONS)
+_SHAB_SET = set(SHABBAT_STATIONS)
+
+def fmt_il_date(ts_str):
+    """'2026-07-12 13:22' → '13:22 12/7'"""
+    try:
+        dt = datetime.fromisoformat(ts_str)
+        return f"{dt.hour:02d}:{dt.minute:02d} {dt.day}/{dt.month}"
+    except Exception:
+        return ts_str
+
+def hebrew_date(date_str):
+    """'2026-07-05' → '5/7'"""
+    try:
+        d = datetime.strptime(date_str, '%Y-%m-%d')
+        return f"{d.day}/{d.month}"
+    except Exception:
+        return date_str
+
+def is_sunday(date_str):
+    try:
+        d = datetime.strptime(date_str, '%Y-%m-%d')
+        return d.weekday() == 6  # Sunday in Python is 6
+    except Exception:
+        return False
+
+
+# ── Pull data ────────────────────────────────────────────────────────────────
+snap = get_latest_snapshot()
+snap['bikes_available'] = snap['bikes_regular'] + snap['bikes_electric']
+snap = snap.sort_values('bikes_available', ascending=False)
+
+total_available  = int(snap['bikes_available'].sum())
+total_electric   = int(snap['bikes_electric'].sum())
+total_regular    = int(snap['bikes_regular'].sum())
+total_disabled   = int(snap['bikes_disabled'].sum())
+total_fleet      = total_available + total_disabled
+active_stations  = len(snap)
+empty_stations   = int((snap['bikes_available'] == 0).sum())
+elec_pct         = round(total_electric / total_available * 100) if total_available > 0 else 0
+reg_pct          = 100 - elec_pct
+avail_pct        = round(total_available / total_fleet * 100, 1) if total_fleet > 0 else 0
+disabled_pct     = round(total_disabled / total_fleet * 100, 1) if total_fleet > 0 else 0
+
+# Last update time
+last_ts = snap['ts'].max() if 'ts' in snap.columns else ''
+last_update = fmt_il_date(last_ts)
+
+# ── Week-over-week comparison ─────────────────────────────────────────────────
+conn_cmp = sqlite3.connect(DB_PATH)
+# Find snapshot closest to same hour, 7 days ago (±3h window)
+last_dt = datetime.fromisoformat(last_ts)
+week_ago = last_dt - timedelta(days=7)
+week_from = (week_ago - timedelta(hours=3)).strftime('%Y-%m-%d %H:%M:%S')
+week_to   = (week_ago + timedelta(hours=3)).strftime('%Y-%m-%d %H:%M:%S')
+
+wow_row = conn_cmp.execute(f"""
+    SELECT AVG(bikes_regular + bikes_electric) * COUNT(DISTINCT station_name) AS avail_total,
+           AVG(bikes_disabled) * COUNT(DISTINCT station_name) AS disabled_total,
+           SUM(CASE WHEN bikes_regular + bikes_electric = 0 THEN 1 ELSE 0 END) AS empty_count
+    FROM snapshots
+    WHERE ts BETWEEN '{week_from}' AND '{week_to}'
+      AND station_name NOT IN ({_BL_SQL})
+""").fetchone()
+conn_cmp.close()
+
+wow_avail    = round(float(wow_row[0] or 0))
+wow_disabled = round(float(wow_row[1] or 0))
+wow_empty    = int(wow_row[2] or 0)
+wow_fleet    = wow_avail + wow_disabled
+wow_avail_pct    = round(wow_avail / wow_fleet * 100, 1) if wow_fleet > 0 else 0
+wow_disabled_pct = round(wow_disabled / wow_fleet * 100, 1) if wow_fleet > 0 else 0
+
+avail_delta  = round(avail_pct - wow_avail_pct, 1)
+disabled_delta = round(disabled_pct - wow_disabled_pct, 1)
+empty_delta  = empty_stations - wow_empty
+
+# Daily rides (all time)
+rides_raw = get_daily_rides()
+rides_raw['date'] = rides_raw['hour'].str[:10]
+daily_rides = (rides_raw.groupby('date')[['rides','elec','reg']]
+               .sum().reset_index().sort_values('date'))
+
+# Last 14 days
+recent_rides = daily_rides.tail(14).copy()
+if recent_rides.empty:
+    recent_rides = pd.DataFrame({'date':[],'rides':[],'elec':[],'reg':[]})
+
+today_rides = int(daily_rides[daily_rides['date'] == daily_rides['date'].max()]['rides'].sum()) \
+              if not daily_rides.empty else 0
+
+# Shortage leaderboard (7 days)
+shortage = get_shortage_leaderboard(hours=168)
+
+# Weekly rides per station (custom query)
+conn = sqlite3.connect(DB_PATH)
+_SHAB_SQL = ','.join(f"'{s}'" for s in SHABBAT_STATIONS)
+weekly_rides_df = pd.read_sql_query(f"""
+    WITH ordered AS (
+        SELECT station_name, ts, bikes_electric, bikes_regular,
+               LAG(bikes_electric) OVER (PARTITION BY station_name ORDER BY ts) AS prev_elec,
+               LAG(bikes_regular)  OVER (PARTITION BY station_name ORDER BY ts) AS prev_reg,
+               LAG(ts)             OVER (PARTITION BY station_name ORDER BY ts) AS prev_ts
+        FROM snapshots
+        WHERE station_name NOT IN ({_BL_SQL})
+          AND ts >= datetime('now', '-7 days')
+    )
+    SELECT station_name,
+        SUM(CASE WHEN (julianday(ts)-julianday(prev_ts))*24 <= 2
+                      AND bikes_electric < prev_elec AND (prev_elec - bikes_electric) <= 5
+                 THEN prev_elec - bikes_electric ELSE 0 END) AS weekly_elec,
+        SUM(CASE WHEN (julianday(ts)-julianday(prev_ts))*24 <= 2
+                      AND bikes_regular < prev_reg  AND (prev_reg  - bikes_regular)  <= 5
+                 THEN prev_reg  - bikes_regular  ELSE 0 END) AS weekly_reg
+    FROM ordered WHERE prev_ts IS NOT NULL
+    GROUP BY station_name
+""", conn)
+conn.close()
+weekly_rides_df['weekly_total'] = weekly_rides_df['weekly_elec'] + weekly_rides_df['weekly_reg']
+
+# Network summary for avg/median chart
+net = get_daily_network_summary()
+
+
+# ── Fetch real coordinates from API ──────────────────────────────────────────
+import requests
+
+try:
+    api_resp = requests.get(
+        'https://api.fsmctmobility.com/api/mobile/jerufun/v1/map', timeout=10)
+    api_stations = api_resp.json().get('stations', [])
+    coord_map = {s['name']: s['location'] for s in api_stations if 'location' in s}
+except Exception as e:
+    print(f"API unavailable: {e}. Using fallback positions.")
+    coord_map = {}
+
+# Jerusalem bounding box → SVG 600×440 canvas (with padding)
+LAT_MAX, LAT_MIN = 31.840, 31.695
+LON_MIN, LON_MAX = 35.160, 35.280
+SVG_W, SVG_H   = 600, 440
+PAD_X, PAD_Y   = 20, 10
+
+def latlon_to_xy(lat, lng):
+    x = PAD_X + round((lng - LON_MIN) / (LON_MAX - LON_MIN) * SVG_W)
+    y = PAD_Y + round((LAT_MAX - lat) / (LAT_MAX - LAT_MIN) * SVG_H)
+    return x, y
+
+import hashlib
+
+def fallback_xy(name):
+    h = int(hashlib.md5(name.encode()).hexdigest(), 16)
+    x = PAD_X + ((h >> 16) & 0xFFFF) % SVG_W
+    y = PAD_Y + ((h & 0xFFFF)) % SVG_H
+    return x, y
+
+# ── Build SVG map stations array ─────────────────────────────────────────────
+map_stations = []
+for i, row in snap.iterrows():
+    name = row['station_name']
+    avail = int(row['bikes_available'])
+    status = str(row.get('status', ''))
+    is_shab = name in _SHAB_SET
+    if status.lower() == 'closed' or (avail == 0 and status.lower() not in ('active', 'full')):
+        color = 'var(--text-faint)'
+    elif avail == 0:
+        color = 'var(--red)'
+    elif is_shab:
+        color = 'var(--gold)'
+    else:
+        color = 'var(--teal)'
+    if name in coord_map:
+        loc = coord_map[name]
+        x, y = latlon_to_xy(loc['lat'], loc['lng'])
+    else:
+        x, y = fallback_xy(name)
+    label = f"{avail} ✡" if is_shab and avail > 0 else str(avail) if avail > 0 else 'ריקה'
+    map_stations.append({'x': x, 'y': y, 'c': color, 'name': name, 'bikes': label})
+
+stations_js = 'var stations = ' + json.dumps(map_stations, ensure_ascii=False) + ';'
+
+
+# ── Ranking table rows ────────────────────────────────────────────────────────
+wr = weekly_rides_df.set_index('station_name').to_dict(orient='index')
+max_bikes = max(1, snap['bikes_available'].max())
+
+ranking_rows = []
+for _, row in snap.iterrows():
+    name = row['station_name']
+    avail = int(row['bikes_available'])
+    elec  = int(row['bikes_electric'])
+    reg   = int(row['bikes_regular'])
+    winfo = wr.get(name, {'weekly_total': 0, 'weekly_elec': 0, 'weekly_reg': 0})
+    w_total = int(winfo['weekly_total'])
+    reg_w = round(reg / avail * 100, 2) if avail > 0 else 0
+    elec_w = round(elec / avail * 100, 2) if avail > 0 else 0
+    ranking_rows.append(
+        f'<tr data-bikes="{avail}" data-rides="{w_total}">'
+        f'<td class="station-name">{name}</td>'
+        f'<td><div class="bar-cell bar-hover2" data-total="{avail}" data-regular="{reg}" data-electric="{elec}" '
+        f'data-total-label="סה&quot;כ אופניים" data-label="{name} · כמות אופניים">'
+        f'<span class="bar-num">{avail}</span>'
+        f'<div class="bar-track">'
+        f'<div class="seg regular" style="width:{reg_w}%;"></div>'
+        f'<div class="seg electric" style="width:{elec_w}%;"></div>'
+        f'</div></div></td>'
+        f'<td><div class="bar-cell"><span class="bar-num">{w_total}</span>'
+        f'<div class="bar-track"><div class="seg rides" style="width:{min(w_total,30)/30*100:.1f}%;"></div></div>'
+        f'</div></td>'
+        f'</tr>'
+    )
+ranking_tbody = '\n'.join(ranking_rows)
+
+
+# ── Rides skyline bars ────────────────────────────────────────────────────────
+max_day_rides = max(1, int(recent_rides['rides'].max()))
+skyline_cols = []
+skyline_labels = []
+n_days = len(recent_rides)
+
+for idx, (_, row) in enumerate(recent_rides.iterrows()):
+    total = int(row['rides'])
+    elec  = int(row['elec'])
+    reg   = int(row['reg'])
+    date_lbl = hebrew_date(row['date'])
+    h_pct = round(total / max_day_rides * 100)
+    reg_h  = round(reg  / total * 100) if total > 0 else 0
+    elec_h = round(elec / total * 100) if total > 0 else 0
+    skyline_cols.append(
+        f'<div class="col bar-hover" style="height:{h_pct}%;" '
+        f'data-date="{date_lbl}" data-regular="{reg}" data-electric="{elec}" data-total="{total}">'
+        f'<span class="bar-value">{total}</span>'
+        f'<div class="bar-fill">'
+        f'<div class="seg regular" style="height:{reg_h}%;"></div>'
+        f'<div class="seg electric" style="height:{elec_h}%;"></div>'
+        f'</div></div>'
+    )
+    # Sunday label (highlight)
+    is_sun = is_sunday(row['date'])
+    style = ' style="color:var(--gold);font-weight:700;"' if is_sun else ''
+    skyline_labels.append(f'<span{style}>{date_lbl}</span>')
+
+# Add week markers for Sunday columns
+week_markers = []
+for idx, (_, row) in enumerate(recent_rides.iterrows()):
+    if is_sunday(row['date']) and n_days > 1:
+        left_pct = round(idx / (n_days - 1) * 100, 2) if n_days > 1 else 0
+        week_markers.append(f'<div class="week-marker" style="left:{left_pct}%;"></div>')
+        week_markers.append(f'<div class="wm-label" style="left:{left_pct}%;">א׳</div>')
+
+rides_skyline_html = '\n'.join(skyline_cols + week_markers)
+rides_labels_html  = '\n'.join(skyline_labels)
+
+
+# ── Chronic empty cards ───────────────────────────────────────────────────────
+chronic = shortage[shortage['pct_empty'] >= 50].head(9)
+chronic_cards = []
+for _, row in chronic.iterrows():
+    name = row['station_name']
+    streak_h = round(float(row.get('max_empty_streak_h', row['empty_samples'] * 0.25)), 1)
+    pct = round(float(row['pct_empty']), 0)
+    avg = round(float(row['avg_bikes']), 1)
+    chronic_cards.append(
+        f'<div class="chronic-card">'
+        f'<div class="top"><span class="name">{name}</span>'
+        f'<span><span class="streak num">{pct:.0f}%</span> <span style="font-size:11px;color:var(--text-faint);font-weight:500;">מהזמן ריקה</span></span></div>'
+        f'<div class="meta">ממוצע {avg} אופניים · שבוע אחרון</div>'
+        f'</div>'
+    )
+chronic_grid_html = '\n'.join(chronic_cards) if chronic_cards else '<p style="color:var(--text-faint);font-size:13px;">אין תחנות כרוניות ריקות 🎉</p>'
+
+
+# ── Distribution histogram ────────────────────────────────────────────────────
+buckets = [
+    ('0', snap['bikes_available'] == 0),
+    ('1-2', (snap['bikes_available'] >= 1) & (snap['bikes_available'] <= 2)),
+    ('3-4', (snap['bikes_available'] >= 3) & (snap['bikes_available'] <= 4)),
+    ('5-6', (snap['bikes_available'] >= 5) & (snap['bikes_available'] <= 6)),
+    ('7-8', (snap['bikes_available'] >= 7) & (snap['bikes_available'] <= 8)),
+    ('9-10',(snap['bikes_available'] >= 9) & (snap['bikes_available'] <= 10)),
+    ('11+', snap['bikes_available'] >= 11),
+]
+counts = [(lbl, int(mask.sum())) for lbl, mask in buckets]
+max_count = max(1, max(c for _, c in counts))
+total_st = len(snap)
+
+hist_bars = []
+for lbl, cnt in counts:
+    h_pct = round(cnt / max_count * 100, 1)
+    pct_st = round(cnt / total_st * 100, 1)
+    hist_bars.append(
+        f'<div class="bar bar-hover" style="height:{h_pct}%;" '
+        f'data-date="{lbl} אופניים" data-total-raw="{cnt} תחנות · {pct_st}% מכלל התחנות">'
+        f'<span class="hist-value"><span class="n">{cnt}</span><span class="p">{pct_st}%</span></span>'
+        f'</div>'
+    )
+hist_html = '\n'.join(hist_bars)
+
+
+# ── DATA object for JS charts ────────────────────────────────────────────────
+def make_labels_and_sundays(dates):
+    labels = [hebrew_date(d) for d in dates]
+    sundays = [i for i, d in enumerate(dates) if is_sunday(d)]
+    return labels, sundays
+
+# Daily rides DATA
+dr_dates = list(recent_rides['date'])
+dr_labels, dr_sundays = make_labels_and_sundays(dr_dates)
+dr_a = [int(v) for v in recent_rides['reg']]
+dr_b = [int(v) for v in recent_rides['elec']]
+
+# Hourly rides (last full day)
+today = daily_rides['date'].max() if not daily_rides.empty else ''
+hourly_rides = rides_raw[rides_raw['date'] == today].copy() if today else pd.DataFrame()
+hourly_rides['hour_num'] = hourly_rides['hour'].str[11:13].astype(int) if not hourly_rides.empty else []
+if not hourly_rides.empty:
+    hr_a = [int(hourly_rides[hourly_rides['hour_num']==h]['reg'].sum()) for h in range(0,24,2)]
+    hr_b = [int(hourly_rides[hourly_rides['hour_num']==h]['elec'].sum()) for h in range(0,24,2)]
+else:
+    hr_a = [0]*12; hr_b = [0]*12
+
+# Weekly rides (sum by week)
+daily_rides['week'] = pd.to_datetime(daily_rides['date']).dt.to_period('W')
+weekly_agg = daily_rides.groupby('week')[['reg','elec']].sum().reset_index().tail(6)
+wr_a = [int(v) for v in weekly_agg['reg']] if not weekly_agg.empty else [0]*6
+wr_b = [int(v) for v in weekly_agg['elec']] if not weekly_agg.empty else [0]*6
+
+# Avg/Median DATA (daily)
+net_dates = list(net['date'])
+net_labels, net_sundays = make_labels_and_sundays(net_dates)
+avg_a = [round(float(v), 2) for v in net['avg_available']]
+avg_b = [round(float(v), 2) for v in net['median_available']]
+
+# Malfunction trend
+malf_a = [round(float(v), 2) for v in net['total_disabled']]
+
+# Empty trend (% stations empty)
+empty_a = [round(float(v) / active_stations * 100, 1) for v in net['empty_stations']]
+empty_b = [round(float(v) / active_stations * 100, 1) for v in net['no_electric_stations']]
+
+# Station chart: pick busiest station, pull real per-station daily reg/elec
+busiest_station = snap.iloc[0]['station_name'] if not snap.empty else ''
+conn_st = sqlite3.connect(DB_PATH)
+st_df = pd.read_sql_query("""
+    SELECT DATE(ts) AS date,
+           ROUND(AVG(bikes_regular), 1)  AS reg,
+           ROUND(AVG(bikes_electric), 1) AS elec
+    FROM snapshots
+    WHERE station_name = ?
+    GROUP BY DATE(ts)
+    ORDER BY DATE(ts)
+""", conn_st, params=(busiest_station,))
+conn_st.close()
+st_dates  = list(st_df['date'])
+st_labels, st_sundays = make_labels_and_sundays(st_dates)
+st_a      = [round(float(v), 1) for v in st_df['reg']]   # regular → teal series a
+st_b      = [round(float(v), 1) for v in st_df['elec']]  # electric → gold series b
+
+data_obj = {
+    'station': {
+        'daily': {
+            'labels': st_labels, 'dates': st_dates, 'sunday': st_sundays,
+            'a': st_a, 'b': st_b
+        },
+        'hourly': {'a': hr_a, 'b': hr_b},
+        'weekly': {'a': wr_a, 'b': wr_b},
+        'monthly': {'a': avg_a, 'b': avg_b}
+    },
+    'rides': {
+        'daily': {
+            'labels': dr_labels, 'dates': list(recent_rides['date']),
+            'sunday': dr_sundays, 'a': dr_a, 'b': dr_b
+        },
+        'hourly': {'a': hr_a, 'b': hr_b},
+        'weekly': {'a': wr_a, 'b': wr_b},
+        'monthly': {'a': [sum(dr_a)], 'b': [sum(dr_b)]}
+    },
+    'malf': {
+        'daily': {
+            'labels': net_labels, 'dates': net_dates, 'sunday': net_sundays, 'a': malf_a
+        },
+        'hourly': {'a': (malf_a[-12:] if len(malf_a)>=12 else malf_a+[malf_a[-1]]*(12-len(malf_a))) if malf_a else [0]*12},
+        'weekly': {'a': malf_a[-6:] if len(malf_a)>=6 else malf_a},
+        'monthly': {'a': malf_a}
+    },
+    'empty': {
+        'daily': {
+            'labels': net_labels, 'dates': net_dates, 'sunday': net_sundays,
+            'a': empty_a, 'b': empty_b
+        },
+        'hourly': {'a': empty_a[-12:] if len(empty_a)>=12 else empty_a, 'b': empty_b[-12:] if len(empty_b)>=12 else empty_b},
+        'weekly': {'a': empty_a[-6:] if len(empty_a)>=6 else empty_a, 'b': empty_b[-6:] if len(empty_b)>=6 else empty_b},
+        'monthly': {'a': empty_a, 'b': empty_b}
+    },
+    'avg': {
+        'daily': {
+            'labels': net_labels, 'dates': net_dates, 'sunday': net_sundays,
+            'a': avg_a, 'b': avg_b
+        },
+        'hourly': {'a': avg_a[-12:] if len(avg_a)>=12 else avg_a, 'b': avg_b[-12:] if len(avg_b)>=12 else avg_b},
+        'weekly': {'a': avg_a[-6:] if len(avg_a)>=6 else avg_a, 'b': avg_b[-6:] if len(avg_b)>=6 else avg_b},
+        'monthly': {'a': avg_a, 'b': avg_b}
+    }
+}
+data_js = 'var DATA = ' + json.dumps(data_obj, ensure_ascii=False) + ';'
+
+
+# ── Donut chart SVG path ──────────────────────────────────────────────────────
+def donut_arcs(elec_pct):
+    """Return (elec_path, reg_path) SVG arc attributes for the half-donut."""
+    cx, cy, r = 130, 122, 84
+    total_deg = 180
+    elec_deg = elec_pct / 100 * total_deg
+    # start = left end of semicircle (angle = 180°)
+    # end of elec arc = 180 - elec_deg
+    import math
+    def pt(deg):
+        rad = math.radians(deg)
+        return (round(cx + r * math.cos(rad), 2), round(cy - r * math.sin(rad), 2))
+    start = pt(180)
+    mid = pt(180 - elec_deg)
+    end = pt(0)
+    large_elec = 1 if elec_deg > 180 else 0
+    large_reg  = 1 if (180 - elec_deg) > 180 else 0
+    elec_path = f"M {start[0]} {start[1]} A {r} {r} 0 {large_elec} 1 {mid[0]} {mid[1]}"
+    reg_path  = f"M {mid[0]} {mid[1]} A {r} {r} 0 {large_reg} 1 {end[0]} {end[1]}"
+    return elec_path, reg_path
+
+elec_arc, reg_arc = donut_arcs(elec_pct)
+
+# Date range for UI defaults
+d_to = today if today else '2026-07-12'
+d_from_14 = (datetime.strptime(d_to, '%Y-%m-%d') - timedelta(days=14)).strftime('%Y-%m-%d')
+d_from_10 = (datetime.strptime(d_to, '%Y-%m-%d') - timedelta(days=10)).strftime('%Y-%m-%d')
+h_to   = hebrew_date(d_to)
+h_from = hebrew_date(d_from_14)
+h_from10 = hebrew_date(d_from_10)
+
+
+# ── Patch HTML ────────────────────────────────────────────────────────────────
+with open(os.path.join(BASE_DIR, 'jerufun-redesign-proposal.html'), 'r', encoding='utf-8') as f:
+    html = f.read()
+
+# 0. Embed Heebo font as base64 so it works in CSP-restricted environments (Artifact viewer)
+_HEEBO_WEIGHTS = {
+    400: 'https://fonts.gstatic.com/s/heebo/v28/NGSpv5_NC0k9P_v6ZUCbLRAHxK1EiSyccg.ttf',
+    600: 'https://fonts.gstatic.com/s/heebo/v28/NGSpv5_NC0k9P_v6ZUCbLRAHxK1EVyuccg.ttf',
+    700: 'https://fonts.gstatic.com/s/heebo/v28/NGSpv5_NC0k9P_v6ZUCbLRAHxK1Ebiuccg.ttf',
+    800: 'https://fonts.gstatic.com/s/heebo/v28/NGSpv5_NC0k9P_v6ZUCbLRAHxK1ECSuccg.ttf',
+}
+_font_faces = []
+for _w, _url in _HEEBO_WEIGHTS.items():
+    try:
+        with urllib.request.urlopen(_url, timeout=10) as _r:
+            _b64 = base64.b64encode(_r.read()).decode()
+        _font_faces.append(
+            f"@font-face{{font-family:'Heebo';font-style:normal;font-weight:{_w};"
+            f"font-display:swap;src:url(data:font/truetype;base64,{_b64}) format('truetype');}}"
+        )
+    except Exception:
+        pass  # network unavailable — fall back to Google Fonts link
+
+if _font_faces:
+    _embedded_style = '<style>\n' + '\n'.join(_font_faces) + '\n</style>'
+    html = html.replace(
+        '<link rel="preconnect" href="https://fonts.googleapis.com">',
+        _embedded_style + '\n<!-- Google Fonts replaced with embedded font -->',
+    ).replace(
+        '<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">',
+        ''
+    )
+
+# 1. Page title
+html = html.replace('<title>ירופאן — הצעת עיצוב חדשה</title>',
+                    '<title>ירופאן — דשבורד ירושלים (ניסיון עיצוב)</title>')
+
+# 2. Header timestamp
+html = re.sub(
+    r'<div class="hero-eyebrow">.*?</div>',
+    f'<div class="hero-eyebrow"><span class="pulse-dot teal" style="width:7px;height:7px;"></span> עדכון אחרון: {last_update}</div>',
+    html, count=1
+)
+
+# 3. KPI card: אופניים זמינים (format: total / available, with delta)
+avail_delta_cls = 'good' if avail_delta >= 0 else 'bad'
+avail_delta_arrow = '▲' if avail_delta >= 0 else '▼'
+avail_delta_html = (
+    f'<div class="kpi-delta {avail_delta_cls}">'
+    f'<span class="arrow">{avail_delta_arrow}</span>'
+    f'<span class="value num">{abs(avail_delta)}%</span>'
+    f'<span class="ctx">לעומת שבוע שעבר באותה שעה</span></div>'
+) if wow_fleet > 0 else ''
+
+html = re.sub(
+    r'(<div class="kpi gold">.*?<div class="kpi-value num">)[^<]*(</div>.*?<div class="kpi-sub num">)[^<]*(</div>)',
+    lambda m: m.group(1) + f'{avail_pct}%' + m.group(2) + f'{total_fleet:,} / {total_available:,} אופניים' + m.group(3),
+    html, count=1, flags=re.DOTALL
+)
+# Replace existing delta with real one
+html = re.sub(
+    r'(<div class="kpi gold">.*?kpi-sub num.*?</div>)\s*<div class="kpi-delta[^"]*">.*?</div>',
+    r'\1\n      ' + avail_delta_html,
+    html, count=1, flags=re.DOTALL
+)
+
+# 4. KPI: תחנות פעילות
+html = re.sub(
+    r'(<div class="kpi teal">\s*<div class="kpi-label"><span class="name">תחנות פעילות.*?<div class="kpi-value num">)[^<]*(</div>)',
+    lambda m: m.group(1) + str(active_stations) + m.group(2),
+    html, count=1, flags=re.DOTALL
+)
+
+# 5. KPI: תחנות ריקות
+html = re.sub(
+    r'(<div class="kpi red">.*?<div class="kpi-value num">)[^<]*(</div>)',
+    lambda m: m.group(1) + str(empty_stations) + m.group(2),
+    html, count=1, flags=re.DOTALL
+)
+
+# 6. KPI: אופניים תקולים (format: total / disabled)
+html = re.sub(
+    r'(<div class="kpi slate">.*?<div class="kpi-value num">)[^<]*(</div>.*?<div class="kpi-sub num">)[^<]*(</div>)',
+    lambda m: m.group(1) + f'{disabled_pct}%' + m.group(2) + f'{total_fleet:,} / {total_disabled:,} אופניים' + m.group(3),
+    html, count=1, flags=re.DOTALL
+)
+
+# 7. KPI: נסיעות יומי
+html = re.sub(
+    r'(מספר נסיעות יומי.*?<div class="kpi-value num">)[^<]*(</div>)',
+    lambda m: m.group(1) + f'{today_rides:,}' + m.group(2),
+    html, count=1, flags=re.DOTALL
+)
+
+# 8. Donut chart
+html = re.sub(
+    r'<path d="M 46 122 A 84 84[^"]*" stroke="var\(--gold\)"[^/]*/>\s*<path d="M [^"]*" stroke="var\(--teal\)"[^/]*/>',
+    f'<path d="{elec_arc}" stroke="var(--gold)" stroke-width="30" stroke-linecap="butt"/>\n'
+    f'            <path d="{reg_arc}" stroke="var(--teal)" stroke-width="30" stroke-linecap="butt"/>',
+    html, count=1
+)
+html = re.sub(
+    r'(<div class="donut-center">\s*<div class="n num">)[^<]*(</div>)',
+    lambda m: m.group(1) + f'{total_available:,}' + m.group(2),
+    html, count=1
+)
+html = re.sub(
+    r'(<div class="leg electric">⚡ <span class="num">)[^<]*(</span>)',
+    lambda m: m.group(1) + f'{elec_pct}%' + m.group(2),
+    html, count=1
+)
+html = re.sub(
+    r'(<div class="leg regular">🚲 <span class="num">)[^<]*(</span>)',
+    lambda m: m.group(1) + f'{reg_pct}%' + m.group(2),
+    html, count=1
+)
+
+# 9. Station search placeholder
+html = html.replace(
+    'value="מחנה יהודה — שער יפו"',
+    f'value="{busiest_station}"',
+    1
+)
+
+# 10. Ranking table body
+html = re.sub(
+    r'<tbody id="rankingBody">.*?</tbody>',
+    f'<tbody id="rankingBody">\n{ranking_tbody}\n</tbody>',
+    html, count=1, flags=re.DOTALL
+)
+
+# 11. Rides skyline bars
+html = re.sub(
+    r'<div class="skyline" id="ridesSkyline">[\s\S]*?</div>\s*(?=<div class="skyline-labels")',
+    f'<div class="skyline" id="ridesSkyline">\n{rides_skyline_html}\n</div>\n      ',
+    html, count=1
+)
+# Rides labels
+html = re.sub(
+    r'<div class="skyline-labels" id="ridesSkylineLabels">.*?</div>',
+    f'<div class="skyline-labels" id="ridesSkylineLabels">\n{rides_labels_html}\n</div>',
+    html, count=1, flags=re.DOTALL
+)
+
+# 12. Chronic grid
+html = re.sub(
+    r'<div class="chronic-grid">.*?</div>(?=\s*</section>)',
+    f'<div class="chronic-grid">\n{chronic_grid_html}\n</div>',
+    html, count=1, flags=re.DOTALL
+)
+
+# 13. Distribution histogram bars
+html = re.sub(
+    r'<div class="hist">.*?</div>(?=\s*<div class="skyline-labels")',
+    f'<div class="hist">\n{hist_html}\n</div>',
+    html, count=1, flags=re.DOTALL
+)
+
+# 14. Date filter defaults
+html = re.sub(r'id="ridesDateFrom" value="[^"]*"', f'id="ridesDateFrom" value="{d_from_14}"', html)
+html = re.sub(r'id="ridesDateTo" value="[^"]*"',   f'id="ridesDateTo" value="{d_to}"', html)
+html = re.sub(r'id="ridesDateStatus">[^<]*<',       f'id="ridesDateStatus">מציג: {h_from} – {h_to}<', html)
+html = re.sub(r'id="avgDateFrom" value="[^"]*"',    f'id="avgDateFrom" value="{d_from_10}"', html)
+html = re.sub(r'id="avgDateTo" value="[^"]*"',      f'id="avgDateTo" value="{d_to}"', html)
+html = re.sub(r'id="avgDateStatus">[^<]*<',         f'id="avgDateStatus">מציג: {h_from10} – {h_to}<', html)
+
+# 15. Replace stations JS array
+html = re.sub(
+    r'var stations = \[[\s\S]*?\];',
+    stations_js,
+    html, count=1
+)
+
+# 16. Replace DATA object
+html = re.sub(
+    r'var DATA = \{[\s\S]*?\};',
+    data_js,
+    html, count=1
+)
+
+# 17. Update section-02 station name label
+html = html.replace(
+    'value="מחנה יהודה — שער יפו"',
+    f'value="{busiest_station}"'
+)
+
+# 17b. Inject JS date-filter-redraw before the "Initial render" comment
+DATE_FILTER_JS = r"""
+    // ── LIVE DATE FILTER REDRAW (injected) ─────────────────────────────────
+    (function(){
+      function filterAndRedraw(chartKey, updateFn, fromISO, toISO){
+        var d = DATA[chartKey]['daily'];
+        var dates = d.dates || [];
+        if (!dates.length){ updateFn('daily'); return; }
+        var fl = { labels:[], dates:[], a:[], sunday:[] };
+        if (d.b) fl.b = [];
+        dates.forEach(function(dt, i){
+          if (dt >= fromISO && dt <= toISO){
+            fl.labels.push(d.labels[i]);
+            fl.dates.push(dt);
+            fl.a.push(d.a[i]);
+            if (d.b) fl.b.push(d.b[i]);
+          }
+        });
+        fl.sunday = fl.dates.reduce(function(acc, dt, i){
+          if (new Date(dt).getDay() === 0) acc.push(i);
+          return acc;
+        }, []);
+        var orig = DATA[chartKey]['daily'];
+        DATA[chartKey]['daily'] = fl;
+        updateFn('daily');
+        DATA[chartKey]['daily'] = orig;
+      }
+
+      var FILTER_MAP = [
+        ['stationDateFrom','stationDateTo','stationDateApply','station', updateStation],
+        ['ridesDateFrom',  'ridesDateTo',  'ridesDateApply',  'rides',   updateRides ],
+        ['malfDateFrom',   'malfDateTo',   'malfDateApply',   'malf',    updateMalf  ],
+        ['emptyDateFrom',  'emptyDateTo',  'emptyDateApply',  'empty',   updateEmpty ],
+        ['avgDateFrom',    'avgDateTo',    'avgDateApply',    'avg',     updateAvg   ]
+      ];
+      FILTER_MAP.forEach(function(row){
+        var fromEl = document.getElementById(row[0]);
+        var toEl   = document.getElementById(row[1]);
+        var btn    = document.getElementById(row[2]);
+        if (!btn || !fromEl || !toEl) return;
+        btn.addEventListener('click', function(){
+          if (fromEl.value && toEl.value && fromEl.value <= toEl.value)
+            filterAndRedraw(row[3], row[4], fromEl.value, toEl.value);
+        });
+      });
+    })();
+    // ── end injected ────────────────────────────────────────────────────────
+"""
+html = html.replace(
+    '    // Initial render (daily view, matching the active button on load)',
+    DATE_FILTER_JS + '    // Initial render (daily view, matching the active button on load)'
+)
+
+# 18. Remove decorative background lines from map (they don't match real geography)
+html = re.sub(
+    r'<g stroke="var\(--border-strong\)" stroke-width="1" opacity="0\.6">[\s\S]*?</g>',
+    # Replace with a subtle grid
+    '<g stroke="var(--border)" stroke-width="0.5" opacity="0.4">'
+    + ''.join(f'<line x1="0" y1="{y}" x2="640" y2="{y}"/>' for y in range(50,460,50))
+    + ''.join(f'<line x1="{x}" y1="0" x2="{x}" y2="460"/>' for x in range(50,640,50))
+    + '</g>',
+    html, count=1
+)
+
+# ── Write output ──────────────────────────────────────────────────────────────
+out_path = os.path.join(BASE_DIR, 'index2.html')
+with open(out_path, 'w', encoding='utf-8') as f:
+    f.write(html)
+
+print(f"✅ נוצר: {out_path}")
+print(f"   תחנות: {active_stations} | זמינות: {total_available:,} ({avail_pct}%) | ריקות: {empty_stations}")
+print(f"   ⚡ {total_electric:,} חשמליים ({elec_pct}%) | 🚲 {total_regular:,} רגילים ({reg_pct}%)")
+print(f"   🔧 תקולים: {total_disabled:,} ({disabled_pct}%) | 🚴 נסיעות היום: {today_rides}")
+print(f"   עדכון אחרון: {last_update}")
