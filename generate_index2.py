@@ -73,8 +73,8 @@ active_stations  = len(snap)
 empty_stations   = int((snap['bikes_available'] == 0).sum())
 elec_pct         = round(total_electric / total_available * 100) if total_available > 0 else 0
 reg_pct          = 100 - elec_pct
-avail_pct        = round(total_available / total_fleet * 100, 1) if total_fleet > 0 else 0
-disabled_pct     = round(total_disabled / total_fleet * 100, 1) if total_fleet > 0 else 0
+avail_pct        = round(total_available / total_fleet * 100) if total_fleet > 0 else 0
+disabled_pct     = round(total_disabled / total_fleet * 100) if total_fleet > 0 else 0
 
 # Last update time
 last_ts = snap['ts'].max() if 'ts' in snap.columns else ''
@@ -102,11 +102,11 @@ wow_avail    = round(float(wow_row[0] or 0))
 wow_disabled = round(float(wow_row[1] or 0))
 wow_empty    = int(wow_row[2] or 0)
 wow_fleet    = wow_avail + wow_disabled
-wow_avail_pct    = round(wow_avail / wow_fleet * 100, 1) if wow_fleet > 0 else 0
-wow_disabled_pct = round(wow_disabled / wow_fleet * 100, 1) if wow_fleet > 0 else 0
+wow_avail_pct    = round(wow_avail / wow_fleet * 100) if wow_fleet > 0 else 0
+wow_disabled_pct = round(wow_disabled / wow_fleet * 100) if wow_fleet > 0 else 0
 
-avail_delta  = round(avail_pct - wow_avail_pct, 1)
-disabled_delta = round(disabled_pct - wow_disabled_pct, 1)
+avail_delta  = round(avail_pct - wow_avail_pct)
+disabled_delta = round(disabled_pct - wow_disabled_pct)
 empty_delta  = empty_stations - wow_empty
 
 # Daily rides (all time)
