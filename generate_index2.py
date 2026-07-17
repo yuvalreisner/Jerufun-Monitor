@@ -491,7 +491,8 @@ if _font_faces:
     _embedded_style = '<style>\n' + '\n'.join(_font_faces) + '\n</style>'
     html = html.replace(
         '<link rel="preconnect" href="https://fonts.googleapis.com">',
-        _embedded_style + '\n<!-- Google Fonts replaced with embedded font -->',
+        _embedded_style + '\n<!-- Google Fonts replaced with embedded font -->'
+        + '\n<script src="https://maps.googleapis.com/maps/api/js?key=__MAPS_KEY__&callback=initMap&loading=async" async defer></script>',
     ).replace(
         '<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">',
         ''
