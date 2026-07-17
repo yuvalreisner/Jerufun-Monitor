@@ -1622,10 +1622,22 @@
     wirePeriodToggle('avgPeriod', updateAvg);
 
   
-// ── Google Maps ───────────────────────────────────────────────────────────────
-var _SHABBAT_SET = new Set(DATA.shabbat_stations || []);
 
-function makeMarkerIcon(available, disabled, shabbat) {
+    window._jeruData = DATA;
+    window._jeruShabbat = DATA.shabbat_stations || [];
+  // Initial render (daily view, matching the active button on load)
+    updateStation('daily');
+    updateRides('daily');
+    updateMalf('daily');
+    updateEmpty('daily');
+    updateAvg('daily');
+  })();
+
+</script>
+
+
+<script>
+function _makeMarkerIcon(available, disabled, shabbat) {
   var color = available > 0 ? '#0ea5a0' : (disabled > 0 ? '#9b9c92' : '#cd4239');
   var fs    = available >= 10 ? 9 : 11;
   var ring  = shabbat ? '<circle cx="15" cy="14" r="10" fill="none" stroke="#f0b429" stroke-width="2.5"/>' : '';
@@ -1644,7 +1656,10 @@ function makeMarkerIcon(available, disabled, shabbat) {
   };
 }
 
-window.initMap = function() {
+function initMap() {
+  var data   = window._jeruData || {};
+  var shabbatSet = new Set(window._jeruShabbat || []);
+
   var gmap = new google.maps.Map(document.getElementById('map-el'), {
     center: {lat: 31.782, lng: 35.218},
     zoom: 13,
@@ -1656,13 +1671,13 @@ window.initMap = function() {
   var iw = new google.maps.InfoWindow();
   window._closeIW = function(){ iw.close(); };
 
-  (DATA.stations_geo || []).forEach(function(s) {
+  (data.stations_geo || []).forEach(function(s) {
     if (!s.lat || !s.lng) return;
-    var shabbat = _SHABBAT_SET.has(s.name);
+    var shabbat = shabbatSet.has(s.name);
     var marker = new google.maps.Marker({
       position: {lat: s.lat, lng: s.lng},
       map: gmap,
-      icon: makeMarkerIcon(s.available, s.disabled, shabbat),
+      icon: _makeMarkerIcon(s.available, s.disabled, shabbat),
       title: s.name
     });
     marker.addListener('click', function() {
@@ -1680,15 +1695,6 @@ window.initMap = function() {
     });
   });
 }
-
-  // Initial render (daily view, matching the active button on load)
-    updateStation('daily');
-    updateRides('daily');
-    updateMalf('daily');
-    updateEmpty('daily');
-    updateAvg('daily');
-  })();
-
 </script>
 
 </body>
