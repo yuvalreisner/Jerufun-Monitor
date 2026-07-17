@@ -81,7 +81,7 @@
 
   /* ---------- top bar ---------- */
   header.topbar{
-    position:sticky; top:0; z-index:50;
+    position:sticky; top:0; z-index:100;
     display:flex; align-items:center; justify-content:space-between;
     flex-wrap:wrap;
     gap:12px 16px;
@@ -538,14 +538,6 @@
     </div>
     <div class="map-grid">
       <div class="map-wrap">
-        <div class="map-search" id="mapSearch">
-          <div class="search-box">
-            <span class="icon">🔍</span>
-            <input type="text" id="stationSearchInput" placeholder="חיפוש תחנה…" autocomplete="off">
-            <button type="button" class="clear-btn" id="stationSearchClear" aria-label="נקה חיפוש" hidden>✕</button>
-          </div>
-          <div class="search-dropdown" id="stationDropdown" hidden></div>
-        </div>
         <div id="map-el"><p style="padding:20px;color:var(--text-faint);font-size:13px;">טוען מפה...</p></div>
         <div class="map-legend">
           <div class="item"><span class="sw" style="background:var(--teal);"></span> זמינה</div>
@@ -1657,7 +1649,7 @@ function _makeMarkerIcon(available, disabled, shabbat) {
 }
 
 function initMap() {
-  var data   = window._jeruData || {};
+  var data   = {stations_geo: window._jeruGeo || []};
   var shabbatSet = new Set(window._jeruShabbat || []);
 
   var gmap = new google.maps.Map(document.getElementById('map-el'), {
