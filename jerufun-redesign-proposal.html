@@ -1644,7 +1644,7 @@ function makeMarkerIcon(available, disabled, shabbat) {
   };
 }
 
-function initMap() {
+window.initMap = function() {
   var gmap = new google.maps.Map(document.getElementById('map-el'), {
     center: {lat: 31.782, lng: 35.218},
     zoom: 13,
