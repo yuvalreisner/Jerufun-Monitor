@@ -112,6 +112,35 @@
     margin-top:1px;
   }
 
+
+  /* ---------- topbar timestamp ---------- */
+  .topbar-ts{
+    font-size:11.5px; color:var(--text-dim);
+    background:color-mix(in srgb, var(--teal) 10%, transparent);
+    border:1px solid color-mix(in srgb, var(--teal) 30%, transparent);
+    padding:5px 11px; border-radius:999px; white-space:nowrap;
+  }
+  .topbar-right{ display:flex; align-items:center; gap:10px; }
+
+  /* ---------- info tooltip ---------- */
+  .info-btn{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:17px; height:17px; border-radius:50%;
+    background:var(--bg-panel-2); border:1px solid var(--border-strong);
+    color:var(--text-faint); font-size:10px; font-weight:700; font-style:normal;
+    cursor:default; position:relative; flex-shrink:0; vertical-align:middle;
+    margin-inline-start:6px;
+  }
+  .info-btn::after{
+    content:attr(data-tip);
+    position:absolute; bottom:calc(100% + 8px); inset-inline-end:0;
+    background:var(--bg-panel); border:1px solid var(--border-strong);
+    border-radius:10px; padding:9px 13px; font-size:12px;
+    color:var(--text-dim); line-height:1.7; width:270px;
+    box-shadow:var(--shadow); white-space:normal; text-align:right;
+    pointer-events:none; opacity:0; transition:opacity .15s; z-index:200;
+  }
+  .info-btn:hover::after{ opacity:1; }
   .nav-dropdown{ position:relative; flex-shrink:0; }
   .nav-dropdown-btn{
     display:flex; align-items:center; gap:6px;
@@ -422,6 +451,8 @@
     </div>
   </div>
 
+  <div class="topbar-right">
+  <span class="topbar-ts" id="topbarTs">עדכון אחרון: 17:30 17/7</span>
   <div class="nav-dropdown" id="navDropdown">
     <button type="button" class="nav-dropdown-btn" id="navDropdownBtn">
       <span>☰ ניווט</span>
@@ -437,7 +468,9 @@
       <a href="javascript:void(0)" data-target="trend-empty">תחנות ריקות</a>
       <a href="javascript:void(0)" data-target="chronic">כרוניות</a>
       <a href="javascript:void(0)" data-target="dist">התפלגות</a>
+      <a href="javascript:void(0)" data-target="avg-median">ממוצע/חציון</a>
     </div>
+  </div>
   </div>
 
 </header>
@@ -448,8 +481,7 @@
   <section id="kpis" class="hero">
     <div class="hero-top">
       <div>
-        <div class="hero-eyebrow"><span class="pulse-dot teal" style="width:7px;height:7px;"></span> עדכון אחרון: 17:30 17/7</div>
-        <h2>📊 מספרים כלליים</h2>
+                <h2>📊 מספרים כלליים</h2>
         <p class="hero-note">המספרים בכרטיסיות מבוססים על המדידה העדכנית ביותר שנאספה מהרשת, כל 15 דקות.</p>
       </div>
     </div>
@@ -506,8 +538,7 @@
   <section id="map-sec">
     <div class="section-head">
       <div>
-        <h3><span class="num-tag">01</span> 🗺️ מפה אינטראקטיבית</h3>
-        <p class="hint">תצוגה חיה של כלל תחנות הרשת. צבע הנקודה משקף את מצב התחנה; לחיצה על תחנה פותחת את הגרף בסעיף הבא.</p>
+        <h3><span class="num-tag">01</span> 🗺️ מפה אינטראקטיבית<i class="info-btn" data-tip="תצוגה חיה של כלל תחנות הרשת. צבע הנקודה משקף את מצב התחנה; לחיצה על תחנה פותחת את הגרף בסעיף הבא.">i</i></h3>
       </div>
     </div>
     <div class="map-grid">
@@ -547,8 +578,7 @@
   <section id="station-sec">
     <div class="section-head">
       <div>
-        <h3><span class="num-tag">02</span> 🔍 מספר אופניים בתחנה</h3>
-        <p class="hint">ממוצע אופניים זמינים בתחנה הנבחרת. בגרף שעתי הנתונים המוצגים הם הנתונים המדויקים.</p>
+        <h3><span class="num-tag">02</span> 🔍 מספר אופניים בתחנה<i class="info-btn" data-tip="ממוצע אופניים זמינים בתחנה הנבחרת. בגרף שעתי הנתונים המוצגים הם הנתונים המדויקים.">i</i></h3>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <div class="segmented" id="stationChartType">
@@ -631,8 +661,7 @@
   <section id="rides">
     <div class="section-head">
       <div>
-        <h3><span class="num-tag">03</span> 🚴 כמות נסיעות משוערכת לאורך זמן</h3>
-        <p class="hint">כל ירידה בכמות האופניים בתחנה בין שתי מדידות עוקבות נספרת כנסיעה.</p>
+        <h3><span class="num-tag">03</span> 🚴 כמות נסיעות משוערכת לאורך זמן<i class="info-btn" data-tip="כל ירידה בכמות האופניים בתחנה בין שתי מדידות עוקבות נספרת כנסיעה.">i</i></h3>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <div class="segmented" id="ridesChartType">
@@ -712,8 +741,7 @@
   <section id="ranking">
     <div class="section-head">
       <div>
-        <h3><span class="num-tag">04</span> 🏅 דירוג תחנות</h3>
-        <p class="hint">דירוג התחנות לפי מספר האופניים בכל תחנה או לפי מספר הנסיעות שיצאו מכל תחנה בשבוע האחרון.</p>
+        <h3><span class="num-tag">04</span> 🏅 דירוג תחנות<i class="info-btn" data-tip="דירוג התחנות לפי מספר האופניים בכל תחנה או לפי מספר הנסיעות שיצאו מכל תחנה בשבוע האחרון.">i</i></h3>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <div class="segmented" id="rankingTypeFilter"><button class="active" data-type="all">הכל</button><button data-type="electric">⚡ חשמלי</button><button data-type="regular">🚲 רגיל</button></div>
@@ -860,8 +888,7 @@
   <section id="trend-malfunction">
     <div class="section-head">
       <div>
-        <h3><span class="num-tag">05</span> ⚠️ טרנד אופניים תקולים</h3>
-        <p class="hint">אחוז האופניים התקולים מכלל צי האופניים ברשת, לאורך זמן.</p>
+        <h3><span class="num-tag">05</span> ⚠️ טרנד אופניים תקולים<i class="info-btn" data-tip="אחוז האופניים התקולים מכלל צי האופניים ברשת, לאורך זמן.">i</i></h3>
       </div>
       <div class="segmented" id="malfPeriod"><button class="active" data-period="daily">יומי</button><button data-period="weekly">שבועי</button><button data-period="monthly">חודשי</button></div>
     </div>
@@ -888,8 +915,7 @@
   <section id="trend-empty">
     <div class="section-head">
       <div>
-        <h3><span class="num-tag">06</span> 🔴 טרנד תחנות ריקות</h3>
-        <p class="hint">אחוז התחנות ללא אופניים כלל, ואחוז התחנות ללא אופניים חשמליים, מכלל התחנות ברשת.</p>
+        <h3><span class="num-tag">06</span> 🔴 טרנד תחנות ריקות<i class="info-btn" data-tip="אחוז התחנות ללא אופניים כלל, ואחוז התחנות ללא אופניים חשמליים, מכלל התחנות ברשת.">i</i></h3>
       </div>
       <div class="segmented" id="emptyPeriod"><button class="active" data-period="daily">יומי</button><button data-period="weekly">שבועי</button><button data-period="monthly">חודשי</button></div>
     </div>
@@ -925,8 +951,7 @@
   <section id="chronic">
     <div class="section-head">
       <div>
-        <h3><span class="num-tag">07</span> 📋 תחנות כרוניות ללא אופניים</h3>
-        <p class="hint">תחנות שהיו ריקות מעל חצי יום בכל יום ברצף הימים האחרונים.</p>
+        <h3><span class="num-tag">07</span> 📋 תחנות כרוניות ללא אופניים<i class="info-btn" data-tip="תחנות שהיו ריקות מעל חצי יום בכל יום ברצף הימים האחרונים.">i</i></h3>
       </div>
     </div>
     <div class="filter-row">
@@ -944,8 +969,7 @@
   <section id="dist">
     <div class="section-head" style="justify-content:flex-start;">
       <div>
-        <h3><span class="num-tag">08</span> התפלגות תחנות לפי כמות אופניים</h3>
-        <p class="hint">כמה תחנות ישנן עבור כל טווח אופניים זמינים</p>
+        <h3><span class="num-tag">08</span> התפלגות תחנות לפי כמות אופניים<i class="info-btn" data-tip="כמה תחנות ישנן עבור כל טווח אופניים זמינים">i</i></h3>
         <div class="segmented" style="margin-top:12px;"><button class="active">הכל</button><button>⚡ חשמלי</button><button>🚲 רגיל</button></div>
       </div>
     </div>
@@ -975,8 +999,7 @@
   <section id="avg-median" style="padding-bottom:20px;">
     <div class="section-head">
       <div>
-        <h3><span class="num-tag">09</span> 📉 ממוצע/חציון אופניים לתחנה לאורך זמן</h3>
-        <p class="hint">ממוצע וחציון של מספר האופניים הזמינים לתחנה ביום נתון, על פני כל התחנות ברשת.</p>
+        <h3><span class="num-tag">09</span> 📉 ממוצע/חציון אופניים לתחנה לאורך זמן<i class="info-btn" data-tip="ממוצע וחציון של מספר האופניים הזמינים לתחנה ביום נתון, על פני כל התחנות ברשת.">i</i></h3>
       </div>
       <div class="segmented" id="avgPeriod"><button class="active" data-period="daily">יומי</button><button data-period="weekly">שבועי</button><button data-period="monthly">חודשי</button></div>
     </div>

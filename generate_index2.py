@@ -507,11 +507,10 @@ if _font_faces:
 html = html.replace('<title>ירופאן — הצעת עיצוב חדשה</title>',
                     '<title>ירופאן — דשבורד ירושלים (ניסיון עיצוב)</title>')
 
-# 2. Header timestamp
-html = re.sub(
-    r'<div class="hero-eyebrow">.*?</div>',
-    f'<div class="hero-eyebrow"><span class="pulse-dot teal" style="width:7px;height:7px;"></span> עדכון אחרון: {last_update}</div>',
-    html, count=1
+# 2. Topbar timestamp
+html = html.replace(
+    'עדכון אחרון: 14:32 17/7',
+    f'עדכון אחרון: {last_update}'
 )
 
 # 3. KPI card: אופניים זמינים (format: total / available, with delta)
