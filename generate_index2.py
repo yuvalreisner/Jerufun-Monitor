@@ -492,6 +492,8 @@ if _font_faces:
     html = html.replace(
         '<link rel="preconnect" href="https://fonts.googleapis.com">',
         _embedded_style + '\n<!-- Google Fonts replaced with embedded font -->'
+        + '\n<script>window._jeruGeo=' + json.dumps(stations_geo, ensure_ascii=False)
+        + ';window._jeruShabbat=' + json.dumps(list(_SHAB_SET), ensure_ascii=False) + ';</script>'
         + '\n<script src="https://maps.googleapis.com/maps/api/js?key=__MAPS_KEY__&callback=initMap&loading=async" async defer></script>',
     ).replace(
         '<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">',
