@@ -708,16 +708,6 @@ html = html.replace(
     DATE_FILTER_JS + '    // Initial render (daily view, matching the active button on load)'
 )
 
-# 18. Remove decorative background lines from map (they don't match real geography)
-html = re.sub(
-    r'<g stroke="var\(--border-strong\)" stroke-width="1" opacity="0\.6">[\s\S]*?</g>',
-    # Replace with a subtle grid
-    '<g stroke="var(--border)" stroke-width="0.5" opacity="0.4">'
-    + ''.join(f'<line x1="0" y1="{y}" x2="640" y2="{y}"/>' for y in range(50,460,50))
-    + ''.join(f'<line x1="{x}" y1="0" x2="{x}" y2="460"/>' for x in range(50,640,50))
-    + '</g>',
-    html, count=1
-)
 
 # ── Write output ──────────────────────────────────────────────────────────────
 out_path = os.path.join(BASE_DIR, 'index2.html')
