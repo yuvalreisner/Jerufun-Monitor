@@ -257,6 +257,7 @@
   /* ---------- map ---------- */
   .map-grid{ display:grid; grid-template-columns:1fr; gap:16px; }
   .map-wrap{ position:relative; border-radius:14px; overflow:hidden; background:var(--bg-panel-2); min-height:420px; border:1px solid var(--border); }
+  #map-el{ width:100%; height:460px; display:block; border-radius:14px; }
   .map-wrap svg{ width:100%; height:100%; display:block; }
   .map-legend{
     position:absolute; bottom:14px; inset-inline-start:14px; display:flex; gap:14px; flex-wrap:wrap;
@@ -545,23 +546,7 @@
           </div>
           <div class="search-dropdown" id="stationDropdown" hidden></div>
         </div>
-        <svg viewBox="0 0 640 460" preserveAspectRatio="xMidYMid slice">
-          <defs>
-            <radialGradient id="mapGrad" cx="50%" cy="35%" r="75%">
-              <stop offset="0%" stop-color="var(--bg-panel-2)"/>
-              <stop offset="100%" stop-color="var(--bg-panel)"/>
-            </radialGradient>
-          </defs>
-          <rect width="640" height="460" fill="url(#mapGrad)"/>
-          <g stroke="var(--border-strong)" stroke-width="1" opacity="0.6">
-            <path d="M20 340 C 160 300, 260 260, 340 180 S 520 90, 610 60" fill="none"/>
-            <path d="M40 60 C 140 140, 220 190, 300 260 S 480 380, 600 420" fill="none"/>
-            <path d="M0 220 C 140 210, 300 230, 460 200 S 600 170, 640 200" fill="none"/>
-          </g>
-          <!-- stations: color coded pulse dots -->
-          <g id="stationDots" font-family="Heebo" font-size="9">
-          </g>
-        </svg>
+        <div id="map-el"><p style="padding:20px;color:var(--text-faint);font-size:13px;">טוען מפה...</p></div>
         <div class="map-legend">
           <div class="item"><span class="sw" style="background:var(--teal);"></span> זמינה</div>
           <div class="item"><span class="sw" style="background:var(--red);"></span> ריקה</div>
@@ -1636,7 +1621,67 @@
     wirePeriodToggle('emptyPeriod', updateEmpty);
     wirePeriodToggle('avgPeriod', updateAvg);
 
-    // Initial render (daily view, matching the active button on load)
+  
+// ── Google Maps ───────────────────────────────────────────────────────────────
+var _SHABBAT_SET = new Set(DATA.shabbat_stations || []);
+
+function makeMarkerIcon(available, disabled, shabbat) {
+  var color = available > 0 ? '#0ea5a0' : (disabled > 0 ? '#9b9c92' : '#cd4239');
+  var fs    = available >= 10 ? 9 : 11;
+  var ring  = shabbat ? '<circle cx="15" cy="14" r="10" fill="none" stroke="#f0b429" stroke-width="2.5"/>' : '';
+  var star  = shabbat ? '<text x="26" y="7" text-anchor="middle" font-size="10" font-family="Arial">✡</text>' : '';
+  var label = available > 0 ? available : (disabled > 0 ? '🔧' : '');
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="38" viewBox="0 0 30 38">'
+    + '<path d="M15 0C6.716 0 0 6.716 0 15c0 8.284 15 23 15 23S30 23.284 30 15C30 6.716 23.284 0 15 0z" fill="' + color + '"/>'
+    + '<circle cx="15" cy="14" r="10" fill="white"/>'
+    + ring + star
+    + '<text x="15" y="18.5" text-anchor="middle" fill="' + color + '" font-size="' + fs + '" font-weight="bold" font-family="Arial">' + label + '</text>'
+    + '</svg>';
+  return {
+    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+    scaledSize: new google.maps.Size(30, 38),
+    anchor: new google.maps.Point(15, 38)
+  };
+}
+
+function initMap() {
+  var gmap = new google.maps.Map(document.getElementById('map-el'), {
+    center: {lat: 31.782, lng: 35.218},
+    zoom: 13,
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: true,
+  });
+
+  var iw = new google.maps.InfoWindow();
+  window._closeIW = function(){ iw.close(); };
+
+  (DATA.stations_geo || []).forEach(function(s) {
+    if (!s.lat || !s.lng) return;
+    var shabbat = _SHABBAT_SET.has(s.name);
+    var marker = new google.maps.Marker({
+      position: {lat: s.lat, lng: s.lng},
+      map: gmap,
+      icon: makeMarkerIcon(s.available, s.disabled, shabbat),
+      title: s.name
+    });
+    marker.addListener('click', function() {
+      iw.setContent(
+        '<div style="direction:rtl;min-width:160px;font-family:Heebo,Arial,sans-serif;position:relative">'
+        + '<span onclick="_closeIW()" style="position:absolute;top:-2px;left:-2px;cursor:pointer;font-size:13px;color:#aaa;padding:2px 5px">✕</span>'
+        + '<strong style="font-size:13px">' + s.name + '</strong><br>'
+        + (shabbat ? '<span style="color:#f0b429;font-size:11px">✡ פעילה בשבת לחשמליות</span><br>' : '')
+        + '<span style="color:#f0b429">⚡ חשמלי: ' + s.electric + '</span><br>'
+        + '<span style="color:#0ea5a0">🚲 רגיל: ' + s.regular + '</span><br>'
+        + '<span>🔧 תקולים: ' + s.disabled + '</span>'
+        + '</div>'
+      );
+      iw.open(gmap, marker);
+    });
+  });
+}
+
+  // Initial render (daily view, matching the active button on load)
     updateStation('daily');
     updateRides('daily');
     updateMalf('daily');

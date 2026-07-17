@@ -187,30 +187,22 @@ def fallback_xy(name):
     y = PAD_Y + ((h & 0xFFFF)) % SVG_H
     return x, y
 
-# ── Build SVG map stations array ─────────────────────────────────────────────
-map_stations = []
-for i, row in snap.iterrows():
+# ── Build Google Maps stations_geo array ─────────────────────────────────────
+stations_geo = []
+for _, row in snap.iterrows():
     name = row['station_name']
-    avail = int(row['bikes_available'])
-    status = str(row.get('status', ''))
-    is_shab = name in _SHAB_SET
-    if status.lower() == 'closed' or (avail == 0 and status.lower() not in ('active', 'full')):
-        color = 'var(--text-faint)'
-    elif avail == 0:
-        color = 'var(--red)'
-    elif is_shab:
-        color = 'var(--gold)'
-    else:
-        color = 'var(--teal)'
-    if name in coord_map:
-        loc = coord_map[name]
-        x, y = latlon_to_xy(loc['lat'], loc['lng'])
-    else:
-        x, y = fallback_xy(name)
-    label = f"{avail} ✡" if is_shab and avail > 0 else str(avail) if avail > 0 else 'ריקה'
-    map_stations.append({'x': x, 'y': y, 'c': color, 'name': name, 'bikes': label})
+    loc  = coord_map.get(name, {})
+    stations_geo.append({
+        'name':      name,
+        'lat':       loc.get('lat'),
+        'lng':       loc.get('lng'),
+        'available': int(row['bikes_available']),
+        'electric':  int(row.get('bikes_electric', 0)),
+        'regular':   int(row.get('bikes_regular', 0)),
+        'disabled':  int(row.get('bikes_disabled', 0)),
+    })
 
-stations_js = 'var stations = ' + json.dumps(map_stations, ensure_ascii=False) + ';'
+stations_js = 'var stations = ' + json.dumps(stations_geo, ensure_ascii=False) + ';'
 
 
 # ── Ranking table rows ────────────────────────────────────────────────────────
@@ -433,7 +425,9 @@ data_obj = {
         'hourly': {'a': avg_a[-12:] if len(avg_a)>=12 else avg_a, 'b': avg_b[-12:] if len(avg_b)>=12 else avg_b},
         'weekly': {'a': avg_a[-6:] if len(avg_a)>=6 else avg_a, 'b': avg_b[-6:] if len(avg_b)>=6 else avg_b},
         'monthly': {'a': avg_a, 'b': avg_b}
-    }
+    },
+    'stations_geo':     stations_geo,
+    'shabbat_stations': list(_SHAB_SET),
 }
 data_js = 'var DATA = ' + json.dumps(data_obj, ensure_ascii=False) + ';'
 
@@ -708,6 +702,13 @@ html = html.replace(
     DATE_FILTER_JS + '    // Initial render (daily view, matching the active button on load)'
 )
 
+
+# ── Inject Google Maps API key ────────────────────────────────────────────────
+try:
+    from api_keys import GOOGLE_MAPS_KEY as _MAPS_KEY
+except ImportError:
+    _MAPS_KEY = os.environ.get('GOOGLE_MAPS_KEY', '')
+html = html.replace('__MAPS_KEY__', _MAPS_KEY)
 
 # ── Write output ──────────────────────────────────────────────────────────────
 out_path = os.path.join(BASE_DIR, 'index2.html')
