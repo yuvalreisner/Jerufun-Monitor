@@ -581,7 +581,7 @@ data_obj = {
     'rides_by_station':  rides_by_station,
     'station_names':     sorted(daily_stations.keys()),
 }
-data_js = 'var DATA = ' + json.dumps(data_obj, ensure_ascii=False) + ';'
+data_js = 'window.DATA = ' + json.dumps(data_obj, ensure_ascii=False) + ';'
 
 # First date for slider tooltip
 conn_fd = sqlite3.connect(DB_PATH)
@@ -802,7 +802,7 @@ html = re.sub(
 
 # 16. Replace DATA object
 html = re.sub(
-    r'var DATA = \{[\s\S]*?\};',
+    r'(?:var |window\.)DATA = \{[\s\S]*?\};',
     data_js,
     html, count=1
 )
