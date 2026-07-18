@@ -1067,7 +1067,8 @@
     inputId:'stationChartSearchInput', dropdownId:'stationChartDropdown',
     clearBtnId:'stationChartSearchClear', wrapId:'stationChartSearch',
     onSelect:function(s){
-      if (window._jeruSelectStation) window._jeruSelectStation(s.name);
+      var cur = (document.querySelector('#stationPeriod button.active')||{}).getAttribute('data-period') || 'daily';
+      if (window._jeruSelectStation) window._jeruSelectStation(s.name, cur);
     }
   });
 
