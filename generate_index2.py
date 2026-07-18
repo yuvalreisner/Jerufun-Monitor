@@ -831,10 +831,20 @@ html = html.replace('__MAPS_KEY__', _MAPS_KEY)
 _card_pct = malf_a[-1] if malf_a else disabled_pct
 _card_abs = int(malf_abs[-1]) if malf_abs else total_disabled
 html = html.replace('__MALF_VAL__', f'{_card_abs:,} אופניים תקולים ({_card_pct}%)')
-_delta_cls  = 'up' if disabled_delta > 0 else 'down'
-_delta_sign = '+' if disabled_delta > 0 else '−'
+
+# Delta: compare today's daily average to the daily average 7 days ago
+_today_date = _now.strftime('%Y-%m-%d')
+_wow_date   = (_now - timedelta(days=7)).strftime('%Y-%m-%d')
+if _wow_date in net_dates:
+    _wow_idx      = net_dates.index(_wow_date)
+    _wow_pct      = malf_a[_wow_idx]
+    _malf_delta   = round(_card_pct - _wow_pct, 1)
+else:
+    _malf_delta   = round(disabled_pct - wow_disabled_pct)  # fallback to snapshot comparison
+_delta_cls  = 'up' if _malf_delta > 0 else 'down'
+_delta_sign = '+' if _malf_delta > 0 else '−'
 html = html.replace('__MALF_DELTA_CLS__', _delta_cls)
-html = html.replace('__MALF_DELTA__', f'{_delta_sign} {abs(disabled_delta)}%')
+html = html.replace('__MALF_DELTA__', f'{_delta_sign} {abs(_malf_delta)}%')
 
 # ── Write output ──────────────────────────────────────────────────────────────
 out_path = os.path.join(BASE_DIR, 'index2.html')
