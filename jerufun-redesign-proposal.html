@@ -665,8 +665,9 @@
         <span class="sf-val" id="ridesSliderVal">14 ימים</span>
         <i class="info-btn" data-tip="__SLIDER_TIP__">i</i>
       </div>
-      <div class="inline-search" id="ridesStationSearch" style="margin-bottom:10px;">
-        <div class="search-wrap">
+      <div class="inline-search" id="ridesStationSearch">
+        <div class="search-box">
+          <span class="icon">🔍</span>
           <input type="text" id="ridesStationInput" placeholder="כל התחנות — לחץ לסינון לפי תחנה" autocomplete="off">
           <button type="button" class="clear-btn" id="ridesStationClear" aria-label="נקה" hidden>✕</button>
         </div>
@@ -1075,10 +1076,10 @@
       var matches = q ? names.filter(function(n){ return n.includes(q); }).slice(0,8) : [];
       if (!matches.length){ dropdown.hidden = true; return; }
       dropdown.innerHTML = matches.map(function(n){
-        return '<div class="search-item">' + n + '</div>';
+        return '<div class="opt">' + n + '</div>';
       }).join('');
       dropdown.hidden = false;
-      dropdown.querySelectorAll('.search-item').forEach(function(el){
+      dropdown.querySelectorAll('.opt').forEach(function(el){
         el.addEventListener('mousedown', function(e){
           e.preventDefault();
           selectStation(el.textContent);
