@@ -19,6 +19,7 @@ sys.path.insert(0, BASE_DIR)
 
 try:
     import pandas as pd
+    import db
     from db import (
         get_latest_snapshot, get_daily_rides, get_shortage_leaderboard,
         get_daily_network_summary
@@ -108,6 +109,16 @@ wow_disabled_pct = round(wow_disabled / wow_fleet * 100) if wow_fleet > 0 else 0
 avail_delta  = round(avail_pct - wow_avail_pct)
 disabled_delta = round(disabled_pct - wow_disabled_pct)
 empty_delta  = empty_stations - wow_empty
+
+# Hourly per-station availability (last 72h)
+hourly_sta_raw = db.get_hourly_timeseries_all(hours=72)
+hourly_stations = {}
+for _sname, _rows in hourly_sta_raw.items():
+    hourly_stations[_sname] = {
+        'labels': [r['hour'][11:13] for r in _rows],
+        'a': [round(float(r['reg']), 1) for r in _rows],
+        'b': [round(float(r['elec']), 1) for r in _rows]
+    }
 
 # Daily rides (all time)
 rides_raw = get_daily_rides()
@@ -478,6 +489,7 @@ for sname, grp in all_st_df.groupby('station_name'):
     labs, suns = make_labels_and_sundays(dates)
     daily_stations[sname] = {
         'labels': labs,
+        'dates': dates,
         'sunday': suns,
         'a': [round(float(v), 1) for v in grp['reg']],
         'b': [round(float(v), 1) for v in grp['elec']],
@@ -485,8 +497,34 @@ for sname, grp in all_st_df.groupby('station_name'):
 
 st_dates  = list(st_df['date'])
 st_labels, st_sundays = make_labels_and_sundays(st_dates)
-st_a      = [round(float(v), 1) for v in st_df['reg']]   # regular → teal series a
-st_b      = [round(float(v), 1) for v in st_df['elec']]  # electric → gold series b
+st_a      = [round(float(v), 1) for v in st_df['reg']]
+st_b      = [round(float(v), 1) for v in st_df['elec']]
+
+# Per-station rides (daily + hourly last 72h)
+_st_rides_df = db.get_station_rides(days_back=60)
+_cutoff_hr   = (_now - _dt.timedelta(hours=72)).strftime('%Y-%m-%dT%H:00')
+rides_by_station = {}
+for _sname, _grp in _st_rides_df.groupby('station_name'):
+    # daily aggregation
+    _grp = _grp.copy()
+    _grp['date'] = _grp['hour'].str[:10]
+    _daily = _grp.groupby('date')[['elec','reg']].sum().reset_index().sort_values('date')
+    _d_dates = list(_daily['date'])
+    _d_labs, _d_suns = make_labels_and_sundays(_d_dates)
+    # hourly: last 72h
+    _hourly = _grp[_grp['hour'] >= _cutoff_hr].sort_values('hour')
+    rides_by_station[_sname] = {
+        'daily':  {
+            'labels': _d_labs, 'dates': _d_dates, 'sunday': _d_suns,
+            'a': [int(v) for v in _daily['reg']],
+            'b': [int(v) for v in _daily['elec']]
+        },
+        'hourly': {
+            'labels': [h[11:13] for h in _hourly['hour']],
+            'a': [int(v) for v in _hourly['reg']],
+            'b': [int(v) for v in _hourly['elec']]
+        }
+    }
 
 data_obj = {
     'station': {
@@ -494,9 +532,9 @@ data_obj = {
             'labels': st_labels, 'dates': st_dates, 'sunday': st_sundays,
             'a': st_a, 'b': st_b
         },
-        'hourly':  {'labels': hr_labels, 'a': hr_a, 'b': hr_b},
-        'weekly':  {'labels': wr_labels, 'a': wr_a, 'b': wr_b},
-        'monthly': {'labels': mo_labels, 'a': mo_a, 'b': mo_b}
+        'hourly':  {'labels': [], 'a': [], 'b': []},
+        'weekly':  {'labels': [], 'a': [], 'b': []},
+        'monthly': {'labels': [], 'a': [], 'b': []}
     },
     'rides': {
         'daily': {
@@ -528,10 +566,12 @@ data_obj = {
         'weekly':  {'labels': nw_labels, 'a': avg_w_a, 'b': avg_w_b},
         'monthly': {'labels': nm_labels, 'a': avg_m_a, 'b': avg_m_b}
     },
-    'stations_geo':     stations_geo,
-    'shabbat_stations': list(_SHAB_SET),
-    'daily_stations':   daily_stations,
-    'station_names':    sorted(daily_stations.keys()),
+    'stations_geo':      stations_geo,
+    'shabbat_stations':  list(_SHAB_SET),
+    'daily_stations':    daily_stations,
+    'hourly_stations':   hourly_stations,
+    'rides_by_station':  rides_by_station,
+    'station_names':     sorted(daily_stations.keys()),
 }
 data_js = 'var DATA = ' + json.dumps(data_obj, ensure_ascii=False) + ';'
 

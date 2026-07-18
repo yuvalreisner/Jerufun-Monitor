@@ -32,21 +32,14 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_station ON snapshots(station_id, ts);
         CREATE TABLE IF NOT EXISTS station_meta (
             station_id  TEXT PRIMARY KEY,
-            address     TEXT DEFAULT '',
-            is_shabbat_station INTEGER DEFAULT 0
+            address     TEXT DEFAULT ''
         );
     """)
     conn.commit()
-    # add column for existing DBs (ignore if already exists)
-    try:
-        conn.execute("ALTER TABLE station_meta ADD COLUMN is_shabbat_station INTEGER DEFAULT 0")
-        conn.commit()
-    except Exception:
-        pass
     conn.close()
 
 
-def insert_snapshots(rows: list):
+def insert_snapshots(rows: list[dict]):
     conn = get_conn()
     conn.executemany("""
         INSERT INTO snapshots
@@ -187,6 +180,49 @@ def get_collection_range() -> tuple:
     return row[0], row[1]
 
 
+def get_station_rides(days_back: int = 60) -> pd.DataFrame:
+    """Per-station hourly ride counts for the last days_back days.
+    Returns DataFrame with columns: station_name, hour, elec, reg."""
+    conn = get_conn()
+    cutoff = f"datetime('now', '-{days_back} days')"
+    df = pd.read_sql_query(f"""
+        WITH ordered AS (
+            SELECT station_name, ts, bikes_electric, bikes_regular,
+                   LAG(bikes_electric) OVER (PARTITION BY station_name ORDER BY ts) AS prev_elec,
+                   LAG(bikes_regular)  OVER (PARTITION BY station_name ORDER BY ts) AS prev_reg,
+                   LAG(ts)             OVER (PARTITION BY station_name ORDER BY ts) AS prev_ts
+            FROM snapshots
+            WHERE ts >= {cutoff} AND station_name NOT IN ({_BL_SQL})
+        ),
+        deltas AS (
+            SELECT station_name, ts,
+                CASE WHEN (julianday(ts)-julianday(prev_ts))*24 <= 2
+                          AND bikes_electric < prev_elec
+                          AND (prev_elec - bikes_electric) <= 5
+                          AND (
+                               station_name IN ({_SHAB_SQL})
+                               OR (STRFTIME('%w',ts)!='6'
+                                   AND NOT (STRFTIME('%w',ts)='5' AND TIME(ts)>='19:05'))
+                             )
+                     THEN prev_elec - bikes_electric ELSE 0 END AS taken_elec,
+                CASE WHEN (julianday(ts)-julianday(prev_ts))*24 <= 2
+                          AND bikes_regular < prev_reg
+                          AND (prev_reg - bikes_regular) <= 5
+                     THEN prev_reg - bikes_regular ELSE 0 END AS taken_reg
+            FROM ordered WHERE prev_ts IS NOT NULL
+        )
+        SELECT station_name,
+               STRFTIME('%Y-%m-%dT%H:00', ts) AS hour,
+               SUM(taken_elec) AS elec,
+               SUM(taken_reg)  AS reg
+        FROM deltas
+        GROUP BY station_name, hour
+        ORDER BY station_name, hour
+    """, conn)
+    conn.close()
+    return df
+
+
 def get_hourly_timeseries_all(hours: int) -> dict:
     """Returns hourly-averaged timeseries for every station as {name: [{ts, reg, elec, dis}]}."""
     conn = get_conn()
@@ -278,16 +314,6 @@ def upsert_station_address(station_id: str, address: str):
         INSERT INTO station_meta (station_id, address) VALUES (?, ?)
         ON CONFLICT(station_id) DO UPDATE SET address = excluded.address
     """, (station_id, address))
-    conn.commit()
-    conn.close()
-
-
-def upsert_station_shabbat(station_id: str, is_shabbat: bool):
-    conn = get_conn()
-    conn.execute("""
-        INSERT INTO station_meta (station_id, is_shabbat_station) VALUES (?, ?)
-        ON CONFLICT(station_id) DO UPDATE SET is_shabbat_station = excluded.is_shabbat_station
-    """, (station_id, 1 if is_shabbat else 0))
     conn.commit()
     conn.close()
 
