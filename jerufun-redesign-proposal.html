@@ -1066,38 +1066,59 @@
     var input    = document.getElementById('ridesStationInput');
     var dropdown = document.getElementById('ridesStationDropdown');
     var clearBtn = document.getElementById('ridesStationClear');
-    if (!input || !dropdown) return;
+    if (!input || !dropdown || !clearBtn) return;
 
-    var _origRides = null; // saved on first selection
-    var names = [];
+    var _origRides = null;
 
-    function showDropdown(q){
-      if (!names.length) names = DATA.station_names || [];
-      var matches = q ? names.filter(function(n){ return n.includes(q); }).slice(0,8) : [];
-      if (!matches.length){ dropdown.hidden = true; return; }
-      dropdown.innerHTML = matches.map(function(n){
-        return '<div class="opt">' + n + '</div>';
-      }).join('');
-      dropdown.hidden = false;
-      dropdown.querySelectorAll('.opt').forEach(function(el){
-        el.addEventListener('mousedown', function(e){
-          e.preventDefault();
-          selectStation(el.textContent);
-        });
-      });
+    function stationTotal(name){
+      var st = (DATA.rides_by_station || {})[name];
+      if (!st || !st.daily) return 0;
+      var a = st.daily.a || [], b = st.daily.b || [], s = 0;
+      for (var i = 0; i < a.length; i++) s += (a[i]||0) + (b[i]||0);
+      return s;
     }
+
+    function renderDropdown(q){
+      var names = Object.keys(DATA.rides_by_station || {});
+      if (q) names = names.filter(function(n){ return n.indexOf(q) !== -1; });
+      names.sort(function(a, b){ return stationTotal(b) - stationTotal(a); });
+      dropdown.innerHTML = '';
+      if (!names.length){
+        var em = document.createElement('div');
+        em.className = 'empty'; em.textContent = 'לא נמצאה תחנה';
+        dropdown.appendChild(em);
+        dropdown.hidden = false;
+        return;
+      }
+      names.slice(0, 10).forEach(function(name){
+        var total = stationTotal(name);
+        var opt = document.createElement('div');
+        opt.className = 'opt';
+        opt.innerHTML = '<span>' + name + '</span>' +
+          '<span class="status"><span class="sw" style="background:var(--teal);"></span>' + total + ' נסיעות</span>';
+        opt.addEventListener('mousedown', function(e){
+          e.preventDefault();
+          selectStation(name);
+        });
+        dropdown.appendChild(opt);
+      });
+      dropdown.hidden = false;
+    }
+
+    function openDropdown(){ renderDropdown(input.value.trim()); }
+    function closeDropdown(){ dropdown.hidden = true; }
 
     function selectStation(name){
       if (!_origRides) _origRides = JSON.parse(JSON.stringify(DATA.rides));
       var stData = (DATA.rides_by_station || {})[name];
       if (!stData) return;
-      DATA.rides.daily  = stData.daily;
-      DATA.rides.hourly = stData.hourly;
-      DATA.rides.weekly  = stData.daily;  // fallback: use daily for weekly
+      DATA.rides.daily   = stData.daily;
+      DATA.rides.hourly  = stData.hourly;
+      DATA.rides.weekly  = stData.daily;
       DATA.rides.monthly = stData.daily;
       input.value = name;
       clearBtn.hidden = false;
-      dropdown.hidden = true;
+      closeDropdown();
       var period = (document.querySelector('#ridesPeriod button.active')||{}).getAttribute('data-period') || 'daily';
       var slider = document.getElementById('ridesSlider');
       var n = slider ? parseInt(slider.value,10) : 14;
@@ -1112,12 +1133,17 @@
       var slider = document.getElementById('ridesSlider');
       var n = slider ? parseInt(slider.value,10) : 14;
       if (window._jeruSlice) window._jeruSlice('rides', period, n);
+      openDropdown();
     });
 
-    input.addEventListener('input', function(){ showDropdown(input.value); });
-    input.addEventListener('focus', function(){ if(input.value) showDropdown(input.value); });
+    input.addEventListener('focus', openDropdown);
+    input.addEventListener('click', openDropdown);
+    input.addEventListener('input', function(){
+      clearBtn.hidden = input.value.length === 0;
+      openDropdown();
+    });
     document.addEventListener('click', function(e){
-      if (!e.target.closest('#ridesStationSearch')) dropdown.hidden = true;
+      if (!e.target.closest('#ridesStationSearch')) closeDropdown();
     });
   })();
 
