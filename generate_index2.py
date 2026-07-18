@@ -110,12 +110,17 @@ avail_delta  = round(avail_pct - wow_avail_pct)
 disabled_delta = round(disabled_pct - wow_disabled_pct)
 empty_delta  = empty_stations - wow_empty
 
+def _dt_label(h):
+    """'2026-07-18T13:00' or '2026-07-18 13:00' → '18/7 13:00'"""
+    return f"{int(h[8:10])}/{int(h[5:7])} {h[11:13]}:00"
+
 # Hourly per-station availability (last 72h)
 hourly_sta_raw = db.get_hourly_timeseries_all(hours=72)
 hourly_stations = {}
 for _sname, _rows in hourly_sta_raw.items():
     hourly_stations[_sname] = {
-        'labels': [r['hour'][11:13] for r in _rows],
+        'labels':    [r['hour'][11:13] for r in _rows],
+        'datetimes': [_dt_label(r['hour']) for r in _rows],
         'a': [round(float(r['reg']), 1) for r in _rows],
         'b': [round(float(r['elec']), 1) for r in _rows]
     }
@@ -131,7 +136,8 @@ import datetime as _dt
 _now = _dt.datetime.utcnow()
 _cutoff = (_now - _dt.timedelta(hours=48)).strftime('%Y-%m-%dT%H:00')
 hourly_rides_df = rides_raw[rides_raw['hour'] >= _cutoff].copy().sort_values('hour')
-rhr_labels = [h[11:13] for h in hourly_rides_df['hour']]  # "HH" — overridden below after hourly_snap
+rhr_labels    = [h[11:13]     for h in hourly_rides_df['hour']]
+rhr_datetimes = [_dt_label(h) for h in hourly_rides_df['hour']]
 rhr_a = [int(v) for v in hourly_rides_df['reg']]
 rhr_b = [int(v) for v in hourly_rides_df['elec']]
 
@@ -395,8 +401,9 @@ if not hourly_snap.empty:
 else:
     hr_labels = []; hr_a = []; hr_b = []; hr_avail = []
 
-# Hourly rides labels always use HH format
-rhr_labels = [h[11:13] for h in hourly_rides_df['hour']]
+# Reassign to ensure consistency after hourly_snap block
+rhr_labels    = [h[11:13]     for h in hourly_rides_df['hour']]
+rhr_datetimes = [_dt_label(h) for h in hourly_rides_df['hour']]
 # legacy today variable still needed below
 today = daily_rides['date'].max() if not daily_rides.empty else ''
 today_str = today
@@ -520,7 +527,8 @@ for _sname, _grp in _st_rides_df.groupby('station_name'):
             'b': [int(v) for v in _daily['elec']]
         },
         'hourly': {
-            'labels': [h[11:13] for h in _hourly['hour']],
+            'labels':    [h[11:13]     for h in _hourly['hour']],
+            'datetimes': [_dt_label(h) for h in _hourly['hour']],
             'a': [int(v) for v in _hourly['reg']],
             'b': [int(v) for v in _hourly['elec']]
         }
@@ -541,7 +549,7 @@ data_obj = {
             'labels': dr_labels, 'dates': list(recent_rides['date']),
             'sunday': dr_sundays, 'a': dr_a, 'b': dr_b
         },
-        'hourly':  {'labels': rhr_labels, 'a': rhr_a, 'b': rhr_b},
+        'hourly':  {'labels': rhr_labels, 'datetimes': rhr_datetimes, 'a': rhr_a, 'b': rhr_b},
         'weekly':  {'labels': wr_labels, 'a': wr_a, 'b': wr_b},
         'monthly': {'labels': mo_labels, 'a': mo_a, 'b': mo_b}
     },
