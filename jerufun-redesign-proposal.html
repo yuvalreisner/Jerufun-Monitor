@@ -987,7 +987,10 @@
 
     function renderDropdown(query){
       var q = (query || '').trim();
-      var matches = stations.filter(function(s){ return s.name.indexOf(q) !== -1; });
+      // opts.getStations(q) → custom list; otherwise filter global stations
+      var matches = opts.getStations
+        ? opts.getStations(q)
+        : stations.filter(function(s){ return s.name.indexOf(q) !== -1; });
       dropdown.innerHTML = '';
       if (matches.length === 0){
         var empty = document.createElement('div');
@@ -999,10 +1002,13 @@
       matches.forEach(function(s){
         var opt = document.createElement('div');
         opt.className = 'opt';
-        var bkColor = s.available > 0 ? 'var(--teal)' : 'var(--red)';
-        var bkCount = s.available !== undefined ? s.available + ' זמינים' : '';
-        opt.innerHTML = '<span>' + s.name + '</span>' +
-          '<span class="status"><span class="sw" style="background:' + bkColor + ';"></span>' + bkCount + '</span>';
+        var statusHTML = opts.renderStatus
+          ? opts.renderStatus(s)
+          : (function(){
+              var bkColor = s.available > 0 ? 'var(--teal)' : 'var(--red)';
+              return '<span class="sw" style="background:' + bkColor + ';"></span>' + s.available + ' זמינים';
+            })();
+        opt.innerHTML = '<span>' + s.name + '</span><span class="status">' + statusHTML + '</span>';
         opt.addEventListener('click', function(){
           input.value = s.name;
           clearBtn.hidden = false;
@@ -1030,6 +1036,7 @@
     clearBtn.addEventListener('click', function(){
       input.value = '';
       clearBtn.hidden = true;
+      if (opts.onClear) opts.onClear();
       input.focus();
       openDropdown();
     });
@@ -1063,11 +1070,6 @@
 
   // ---- rides station filter ----
   (function(){
-    var input    = document.getElementById('ridesStationInput');
-    var dropdown = document.getElementById('ridesStationDropdown');
-    var clearBtn = document.getElementById('ridesStationClear');
-    if (!input || !dropdown || !clearBtn) return;
-
     var _origRides = null;
 
     function stationTotal(name){
@@ -1078,72 +1080,40 @@
       return s;
     }
 
-    function renderDropdown(q){
-      var names = Object.keys(DATA.rides_by_station || {});
-      if (q) names = names.filter(function(n){ return n.indexOf(q) !== -1; });
-      names.sort(function(a, b){ return stationTotal(b) - stationTotal(a); });
-      dropdown.innerHTML = '';
-      if (!names.length){
-        var em = document.createElement('div');
-        em.className = 'empty'; em.textContent = 'לא נמצאה תחנה';
-        dropdown.appendChild(em);
-        dropdown.hidden = false;
-        return;
+    setupStationSearch({
+      inputId:   'ridesStationInput',
+      dropdownId:'ridesStationDropdown',
+      clearBtnId:'ridesStationClear',
+      wrapId:    'ridesStationSearch',
+      getStations: function(q){
+        var names = Object.keys(DATA.rides_by_station || {});
+        if (q) names = names.filter(function(n){ return n.indexOf(q) !== -1; });
+        names.sort(function(a, b){ return stationTotal(b) - stationTotal(a); });
+        return names.map(function(n){ return { name: n, total: stationTotal(n) }; });
+      },
+      renderStatus: function(s){
+        return '<span class="sw" style="background:var(--teal);"></span>' + s.total + ' נסיעות';
+      },
+      onSelect: function(s){
+        if (!_origRides) _origRides = JSON.parse(JSON.stringify(DATA.rides));
+        var stData = (DATA.rides_by_station || {})[s.name];
+        if (!stData) return;
+        DATA.rides.daily   = stData.daily;
+        DATA.rides.hourly  = stData.hourly;
+        DATA.rides.weekly  = stData.daily;
+        DATA.rides.monthly = stData.daily;
+        var period = (document.querySelector('#ridesPeriod button.active')||{}).getAttribute('data-period') || 'daily';
+        var slider = document.getElementById('ridesSlider');
+        var n = slider ? parseInt(slider.value,10) : 14;
+        if (window._jeruSlice) window._jeruSlice('rides', period, n);
+      },
+      onClear: function(){
+        if (_origRides){ DATA.rides = _origRides; _origRides = null; }
+        var period = (document.querySelector('#ridesPeriod button.active')||{}).getAttribute('data-period') || 'daily';
+        var slider = document.getElementById('ridesSlider');
+        var n = slider ? parseInt(slider.value,10) : 14;
+        if (window._jeruSlice) window._jeruSlice('rides', period, n);
       }
-      names.forEach(function(name){
-        var total = stationTotal(name);
-        var opt = document.createElement('div');
-        opt.className = 'opt';
-        opt.innerHTML = '<span>' + name + '</span>' +
-          '<span class="status"><span class="sw" style="background:var(--teal);"></span>' + total + ' נסיעות</span>';
-        opt.addEventListener('mousedown', function(e){
-          e.preventDefault();
-          selectStation(name);
-        });
-        dropdown.appendChild(opt);
-      });
-      dropdown.hidden = false;
-    }
-
-    function openDropdown(){ renderDropdown(input.value.trim()); }
-    function closeDropdown(){ dropdown.hidden = true; }
-
-    function selectStation(name){
-      if (!_origRides) _origRides = JSON.parse(JSON.stringify(DATA.rides));
-      var stData = (DATA.rides_by_station || {})[name];
-      if (!stData) return;
-      DATA.rides.daily   = stData.daily;
-      DATA.rides.hourly  = stData.hourly;
-      DATA.rides.weekly  = stData.daily;
-      DATA.rides.monthly = stData.daily;
-      input.value = name;
-      clearBtn.hidden = false;
-      closeDropdown();
-      var period = (document.querySelector('#ridesPeriod button.active')||{}).getAttribute('data-period') || 'daily';
-      var slider = document.getElementById('ridesSlider');
-      var n = slider ? parseInt(slider.value,10) : 14;
-      if (window._jeruSlice) window._jeruSlice('rides', period, n);
-    }
-
-    clearBtn.addEventListener('click', function(){
-      if (_origRides) { DATA.rides = _origRides; _origRides = null; }
-      input.value = '';
-      clearBtn.hidden = true;
-      var period = (document.querySelector('#ridesPeriod button.active')||{}).getAttribute('data-period') || 'daily';
-      var slider = document.getElementById('ridesSlider');
-      var n = slider ? parseInt(slider.value,10) : 14;
-      if (window._jeruSlice) window._jeruSlice('rides', period, n);
-      openDropdown();
-    });
-
-    input.addEventListener('focus', openDropdown);
-    input.addEventListener('click', openDropdown);
-    input.addEventListener('input', function(){
-      clearBtn.hidden = input.value.length === 0;
-      openDropdown();
-    });
-    document.addEventListener('click', function(e){
-      if (!e.target.closest('#ridesStationSearch')) closeDropdown();
     });
   })();
 
