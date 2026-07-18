@@ -115,8 +115,17 @@ rides_raw['date'] = rides_raw['hour'].str[:10]
 daily_rides = (rides_raw.groupby('date')[['rides','elec','reg']]
                .sum().reset_index().sort_values('date'))
 
-# Last 14 days
-recent_rides = daily_rides.tail(14).copy()
+# Hourly rides — last 48 hours, using same ride-counting logic
+import datetime as _dt
+_now = _dt.datetime.utcnow()
+_cutoff = (_now - _dt.timedelta(hours=48)).strftime('%Y-%m-%dT%H:00')
+hourly_rides_df = rides_raw[rides_raw['hour'] >= _cutoff].copy().sort_values('hour')
+rhr_labels = [h[11:13] for h in hourly_rides_df['hour']]  # "HH" — overridden below after hourly_snap
+rhr_a = [int(v) for v in hourly_rides_df['reg']]
+rhr_b = [int(v) for v in hourly_rides_df['elec']]
+
+# Last 30 days
+recent_rides = daily_rides.tail(30).copy()
 if recent_rides.empty:
     recent_rides = pd.DataFrame({'date':[],'rides':[],'elec':[],'reg':[]})
 
@@ -168,6 +177,14 @@ except Exception as e:
     print(f"API unavailable: {e}. Using fallback positions.")
     coord_map = {}
 
+# ── Load station addresses from DB ───────────────────────────────────────────
+_conn_addr = sqlite3.connect(DB_PATH)
+_addr_rows = _conn_addr.execute(
+    "SELECT station_id, address FROM station_meta WHERE address != ''"
+).fetchall()
+_conn_addr.close()
+addr_map = {r[0]: r[1] for r in _addr_rows}  # station_id → address
+
 # Jerusalem bounding box → SVG 600×440 canvas (with padding)
 LAT_MAX, LAT_MIN = 31.840, 31.695
 LON_MIN, LON_MAX = 35.160, 35.280
@@ -194,12 +211,14 @@ for _, row in snap.iterrows():
     loc  = coord_map.get(name, {})
     stations_geo.append({
         'name':      name,
+        'address':   addr_map.get(str(row.get('station_id', '')), ''),
         'lat':       loc.get('lat'),
         'lng':       loc.get('lng'),
         'available': int(row['bikes_available']),
         'electric':  int(row.get('bikes_electric', 0)),
         'regular':   int(row.get('bikes_regular', 0)),
         'disabled':  int(row.get('bikes_disabled', 0)),
+        'docks':     int(row.get('docks_free', 0)),
     })
 
 stations_js = 'var stations = ' + json.dumps(stations_geo, ensure_ascii=False) + ';'
@@ -217,21 +236,30 @@ for _, row in snap.iterrows():
     reg   = int(row['bikes_regular'])
     winfo = wr.get(name, {'weekly_total': 0, 'weekly_elec': 0, 'weekly_reg': 0})
     w_total = int(winfo['weekly_total'])
-    reg_w = round(reg / avail * 100, 2) if avail > 0 else 0
+    w_elec  = int(winfo['weekly_elec'])
+    w_reg   = int(winfo['weekly_reg'])
+    reg_w  = round(reg / avail * 100, 2) if avail > 0 else 0
     elec_w = round(elec / avail * 100, 2) if avail > 0 else 0
+    MAX_RIDES = 30
+    w_reg_w  = round(w_reg  / MAX_RIDES * 100, 1)
+    w_elec_w = round(w_elec / MAX_RIDES * 100, 1)
     ranking_rows.append(
         f'<tr data-bikes="{avail}" data-rides="{w_total}">'
         f'<td class="station-name">{name}</td>'
         f'<td><div class="bar-cell bar-hover2" data-total="{avail}" data-regular="{reg}" data-electric="{elec}" '
         f'data-total-label="סה&quot;כ אופניים" data-label="{name} · כמות אופניים">'
-        f'<span class="bar-num">{avail}</span>'
+        f'<span class="bar-num" data-total="{avail}" data-regular="{reg}" data-electric="{elec}">{avail}</span>'
         f'<div class="bar-track">'
         f'<div class="seg regular" style="width:{reg_w}%;"></div>'
         f'<div class="seg electric" style="width:{elec_w}%;"></div>'
         f'</div></div></td>'
-        f'<td><div class="bar-cell"><span class="bar-num">{w_total}</span>'
-        f'<div class="bar-track"><div class="seg rides" style="width:{min(w_total,30)/30*100:.1f}%;"></div></div>'
-        f'</div></td>'
+        f'<td><div class="bar-cell bar-hover2" data-total="{w_total}" data-regular="{w_reg}" data-electric="{w_elec}" '
+        f'data-total-label="סה&quot;כ נסיעות שבועיות" data-label="{name} · נסיעות">'
+        f'<span class="bar-num" data-total="{w_total}" data-regular="{w_reg}" data-electric="{w_elec}">{w_total}</span>'
+        f'<div class="bar-track">'
+        f'<div class="seg regular" style="width:{w_reg_w}%;"></div>'
+        f'<div class="seg electric" style="width:{w_elec_w}%;"></div>'
+        f'</div></div></td>'
         f'</tr>'
     )
 ranking_tbody = '\n'.join(ranking_rows)
@@ -334,21 +362,53 @@ dr_labels, dr_sundays = make_labels_and_sundays(dr_dates)
 dr_a = [int(v) for v in recent_rides['reg']]
 dr_b = [int(v) for v in recent_rides['elec']]
 
-# Hourly rides (last full day)
-today = daily_rides['date'].max() if not daily_rides.empty else ''
-hourly_rides = rides_raw[rides_raw['date'] == today].copy() if today else pd.DataFrame()
-hourly_rides['hour_num'] = hourly_rides['hour'].str[11:13].astype(int) if not hourly_rides.empty else []
-if not hourly_rides.empty:
-    hr_a = [int(hourly_rides[hourly_rides['hour_num']==h]['reg'].sum()) for h in range(0,24,2)]
-    hr_b = [int(hourly_rides[hourly_rides['hour_num']==h]['elec'].sum()) for h in range(0,24,2)]
+# Hourly snapshots — last 48 hours, real readings (avg per hour)
+conn_hr = sqlite3.connect(DB_PATH)
+hourly_snap = pd.read_sql_query("""
+    SELECT strftime('%Y-%m-%d %H:00', ts) AS hour,
+           ROUND(AVG(bikes_regular),  1) AS reg,
+           ROUND(AVG(bikes_electric), 1) AS elec,
+           ROUND(AVG(bikes_regular + bikes_electric), 1) AS avail
+    FROM snapshots
+    WHERE ts >= datetime('now', '-48 hours')
+      AND station_name NOT IN (""" + _BL_SQL + """)
+    GROUP BY strftime('%Y-%m-%d %H:00', ts)
+    ORDER BY hour
+""", conn_hr)
+conn_hr.close()
+if not hourly_snap.empty:
+    hr_labels = [r['hour'][11:13] for _, r in hourly_snap.iterrows()]  # "HH"
+    hr_a   = [round(float(v),1) for v in hourly_snap['reg']]
+    hr_b   = [round(float(v),1) for v in hourly_snap['elec']]
+    hr_avail = [round(float(v),1) for v in hourly_snap['avail']]
 else:
-    hr_a = [0]*12; hr_b = [0]*12
+    hr_labels = []; hr_a = []; hr_b = []; hr_avail = []
 
-# Weekly rides (sum by week)
+# Hourly rides labels always use HH format
+rhr_labels = [h[11:13] for h in hourly_rides_df['hour']]
+# legacy today variable still needed below
+today = daily_rides['date'].max() if not daily_rides.empty else ''
+today_str = today
+
+# Weekly rides (sum by week) — up to 16 weeks with real labels
 daily_rides['week'] = pd.to_datetime(daily_rides['date']).dt.to_period('W')
-weekly_agg = daily_rides.groupby('week')[['reg','elec']].sum().reset_index().tail(6)
-wr_a = [int(v) for v in weekly_agg['reg']] if not weekly_agg.empty else [0]*6
-wr_b = [int(v) for v in weekly_agg['elec']] if not weekly_agg.empty else [0]*6
+weekly_agg = daily_rides.groupby('week')[['reg','elec']].sum().reset_index().tail(16)
+wr_a = [int(v) for v in weekly_agg['reg']] if not weekly_agg.empty else []
+wr_b = [int(v) for v in weekly_agg['elec']] if not weekly_agg.empty else []
+wr_labels = []
+for p in (weekly_agg['week'] if not weekly_agg.empty else []):
+    ed = p.end_time.date()
+    wr_labels.append(f'{ed.day}/{ed.month}')
+
+# Monthly rides (sum by month) with Hebrew labels
+_MONTHS_HE = {'1':'ינואר','2':'פברואר','3':'מרץ','4':'אפריל','5':'מאי',
+               '6':'יוני','7':'יולי','8':'אוגוסט','9':'ספטמבר',
+               '10':'אוקטובר','11':'נובמבר','12':'דצמבר'}
+daily_rides['month'] = pd.to_datetime(daily_rides['date']).dt.to_period('M')
+monthly_agg = daily_rides.groupby('month')[['reg','elec']].sum().reset_index()
+mo_a = [int(v) for v in monthly_agg['reg']] if not monthly_agg.empty else []
+mo_b = [int(v) for v in monthly_agg['elec']] if not monthly_agg.empty else []
+mo_labels = [_MONTHS_HE.get(str(p.month), str(p)) for p in (monthly_agg['month'] if not monthly_agg.empty else [])]
 
 # Avg/Median DATA (daily)
 net_dates = list(net['date'])
@@ -363,6 +423,27 @@ malf_a = [round(float(v), 2) for v in net['total_disabled']]
 empty_a = [round(float(v) / active_stations * 100, 1) for v in net['empty_stations']]
 empty_b = [round(float(v) / active_stations * 100, 1) for v in net['no_electric_stations']]
 
+# Weekly/monthly aggregations for net charts
+net['date_p'] = pd.to_datetime(net['date'])
+net['week_p']  = net['date_p'].dt.to_period('W')
+net['month_p'] = net['date_p'].dt.to_period('M')
+
+net_weekly  = net.groupby('week_p')[['avg_available','median_available','total_disabled','empty_stations','no_electric_stations']].mean().reset_index().tail(16)
+nw_labels = [f"{p.end_time.date().day}/{p.end_time.date().month}" for p in net_weekly['week_p']]
+avg_w_a  = [round(float(v),2) for v in net_weekly['avg_available']]
+avg_w_b  = [round(float(v),2) for v in net_weekly['median_available']]
+malf_w_a = [round(float(v),2) for v in net_weekly['total_disabled']]
+empty_w_a= [round(float(v)/active_stations*100,1) for v in net_weekly['empty_stations']]
+empty_w_b= [round(float(v)/active_stations*100,1) for v in net_weekly['no_electric_stations']]
+
+net_monthly = net.groupby('month_p')[['avg_available','median_available','total_disabled','empty_stations','no_electric_stations']].mean().reset_index()
+nm_labels = [_MONTHS_HE.get(str(p.month), str(p)) for p in net_monthly['month_p']]
+avg_m_a  = [round(float(v),2) for v in net_monthly['avg_available']]
+avg_m_b  = [round(float(v),2) for v in net_monthly['median_available']]
+malf_m_a = [round(float(v),2) for v in net_monthly['total_disabled']]
+empty_m_a= [round(float(v)/active_stations*100,1) for v in net_monthly['empty_stations']]
+empty_m_b= [round(float(v)/active_stations*100,1) for v in net_monthly['no_electric_stations']]
+
 # Station chart: pick busiest station, pull real per-station daily reg/elec
 busiest_station = snap.iloc[0]['station_name'] if not snap.empty else ''
 conn_st = sqlite3.connect(DB_PATH)
@@ -375,7 +456,30 @@ st_df = pd.read_sql_query("""
     GROUP BY DATE(ts)
     ORDER BY DATE(ts)
 """, conn_st, params=(busiest_station,))
+
+# Build per-station daily history for all stations
+all_st_df = pd.read_sql_query(f"""
+    SELECT station_name, DATE(ts) AS date,
+           ROUND(AVG(bikes_regular), 1)  AS reg,
+           ROUND(AVG(bikes_electric), 1) AS elec
+    FROM snapshots
+    WHERE station_name NOT IN ({_BL_SQL})
+    GROUP BY station_name, DATE(ts)
+    ORDER BY station_name, date
+""", conn_st)
 conn_st.close()
+
+daily_stations = {}
+for sname, grp in all_st_df.groupby('station_name'):
+    dates  = list(grp['date'])
+    labs, suns = make_labels_and_sundays(dates)
+    daily_stations[sname] = {
+        'labels': labs,
+        'sunday': suns,
+        'a': [round(float(v), 1) for v in grp['reg']],
+        'b': [round(float(v), 1) for v in grp['elec']],
+    }
+
 st_dates  = list(st_df['date'])
 st_labels, st_sundays = make_labels_and_sundays(st_dates)
 st_a      = [round(float(v), 1) for v in st_df['reg']]   # regular → teal series a
@@ -387,49 +491,55 @@ data_obj = {
             'labels': st_labels, 'dates': st_dates, 'sunday': st_sundays,
             'a': st_a, 'b': st_b
         },
-        'hourly': {'a': hr_a, 'b': hr_b},
-        'weekly': {'a': wr_a, 'b': wr_b},
-        'monthly': {'a': avg_a, 'b': avg_b}
+        'hourly':  {'labels': hr_labels, 'a': hr_a, 'b': hr_b},
+        'weekly':  {'labels': wr_labels, 'a': wr_a, 'b': wr_b},
+        'monthly': {'labels': mo_labels, 'a': mo_a, 'b': mo_b}
     },
     'rides': {
         'daily': {
             'labels': dr_labels, 'dates': list(recent_rides['date']),
             'sunday': dr_sundays, 'a': dr_a, 'b': dr_b
         },
-        'hourly': {'a': hr_a, 'b': hr_b},
-        'weekly': {'a': wr_a, 'b': wr_b},
-        'monthly': {'a': [sum(dr_a)], 'b': [sum(dr_b)]}
+        'hourly':  {'labels': rhr_labels, 'a': rhr_a, 'b': rhr_b},
+        'weekly':  {'labels': wr_labels, 'a': wr_a, 'b': wr_b},
+        'monthly': {'labels': mo_labels, 'a': mo_a, 'b': mo_b}
     },
     'malf': {
-        'daily': {
-            'labels': net_labels, 'dates': net_dates, 'sunday': net_sundays, 'a': malf_a
-        },
-        'hourly': {'a': (malf_a[-12:] if len(malf_a)>=12 else malf_a+[malf_a[-1]]*(12-len(malf_a))) if malf_a else [0]*12},
-        'weekly': {'a': malf_a[-6:] if len(malf_a)>=6 else malf_a},
-        'monthly': {'a': malf_a}
+        'daily':   {'labels': net_labels, 'dates': net_dates, 'sunday': net_sundays, 'a': malf_a},
+        'hourly':  {'labels': net_labels[-48:], 'a': malf_a[-48:]},
+        'weekly':  {'labels': nw_labels, 'a': malf_w_a},
+        'monthly': {'labels': nm_labels, 'a': malf_m_a}
     },
     'empty': {
-        'daily': {
-            'labels': net_labels, 'dates': net_dates, 'sunday': net_sundays,
-            'a': empty_a, 'b': empty_b
-        },
-        'hourly': {'a': empty_a[-12:] if len(empty_a)>=12 else empty_a, 'b': empty_b[-12:] if len(empty_b)>=12 else empty_b},
-        'weekly': {'a': empty_a[-6:] if len(empty_a)>=6 else empty_a, 'b': empty_b[-6:] if len(empty_b)>=6 else empty_b},
-        'monthly': {'a': empty_a, 'b': empty_b}
+        'daily':   {'labels': net_labels, 'dates': net_dates, 'sunday': net_sundays, 'a': empty_a, 'b': empty_b},
+        'hourly':  {'labels': net_labels[-48:], 'a': empty_a[-48:], 'b': empty_b[-48:]},
+        'weekly':  {'labels': nw_labels, 'a': empty_w_a, 'b': empty_w_b},
+        'monthly': {'labels': nm_labels, 'a': empty_m_a, 'b': empty_m_b}
     },
     'avg': {
         'daily': {
             'labels': net_labels, 'dates': net_dates, 'sunday': net_sundays,
             'a': avg_a, 'b': avg_b
         },
-        'hourly': {'a': avg_a[-12:] if len(avg_a)>=12 else avg_a, 'b': avg_b[-12:] if len(avg_b)>=12 else avg_b},
-        'weekly': {'a': avg_a[-6:] if len(avg_a)>=6 else avg_a, 'b': avg_b[-6:] if len(avg_b)>=6 else avg_b},
-        'monthly': {'a': avg_a, 'b': avg_b}
+        'hourly':  {'labels': net_labels[-48:], 'a': avg_a[-48:], 'b': avg_b[-48:]},
+        'weekly':  {'labels': nw_labels, 'a': avg_w_a, 'b': avg_w_b},
+        'monthly': {'labels': nm_labels, 'a': avg_m_a, 'b': avg_m_b}
     },
     'stations_geo':     stations_geo,
     'shabbat_stations': list(_SHAB_SET),
+    'daily_stations':   daily_stations,
+    'station_names':    sorted(daily_stations.keys()),
 }
 data_js = 'var DATA = ' + json.dumps(data_obj, ensure_ascii=False) + ';'
+
+# First date for slider tooltip
+conn_fd = sqlite3.connect(DB_PATH)
+fd_row = conn_fd.execute('SELECT MIN(DATE(ts)) FROM snapshots').fetchone()
+conn_fd.close()
+first_date_iso = fd_row[0] if fd_row and fd_row[0] else ''
+first_date_disp = (first_date_iso[8:].lstrip('0') + '/' +
+                   first_date_iso[5:7].lstrip('0') + '/' +
+                   first_date_iso[:4]) if first_date_iso else ''
 
 
 # ── Donut chart SVG path ──────────────────────────────────────────────────────
@@ -624,13 +734,13 @@ html = re.sub(
     html, count=1, flags=re.DOTALL
 )
 
-# 14. Date filter defaults
-html = re.sub(r'id="ridesDateFrom" value="[^"]*"', f'id="ridesDateFrom" value="{d_from_14}"', html)
-html = re.sub(r'id="ridesDateTo" value="[^"]*"',   f'id="ridesDateTo" value="{d_to}"', html)
-html = re.sub(r'id="ridesDateStatus">[^<]*<',       f'id="ridesDateStatus">מציג: {h_from} – {h_to}<', html)
-html = re.sub(r'id="avgDateFrom" value="[^"]*"',    f'id="avgDateFrom" value="{d_from_10}"', html)
-html = re.sub(r'id="avgDateTo" value="[^"]*"',      f'id="avgDateTo" value="{d_to}"', html)
-html = re.sub(r'id="avgDateStatus">[^<]*<',         f'id="avgDateStatus">מציג: {h_from10} – {h_to}<', html)
+# 14. Slider tooltip injection
+_slider_tip = (
+    f'שעתי: עד 48 שעות אחרונות · יומי: עד 30 ימים · '
+    f'שבועי: עד 16 שבועות · חודשי: עד 12 חודשים · '
+    f'נתונים זמינים מאז {first_date_disp}'
+)
+html = html.replace('__SLIDER_TIP__', _slider_tip)
 
 # 15. Replace stations JS array
 html = re.sub(
