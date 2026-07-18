@@ -391,7 +391,7 @@ today = daily_rides['date'].max() if not daily_rides.empty else ''
 today_str = today
 
 # Weekly rides (sum by week) — up to 16 weeks with real labels
-daily_rides['week'] = pd.to_datetime(daily_rides['date']).dt.to_period('W')
+daily_rides['week'] = pd.to_datetime(daily_rides['date']).dt.to_period('W-SAT')
 weekly_agg = daily_rides.groupby('week')[['reg','elec']].sum().reset_index().tail(16)
 wr_a = [int(v) for v in weekly_agg['reg']] if not weekly_agg.empty else []
 wr_b = [int(v) for v in weekly_agg['elec']] if not weekly_agg.empty else []
@@ -426,7 +426,7 @@ empty_b = [round(float(v) / active_stations * 100, 1) for v in net['no_electric_
 
 # Weekly/monthly aggregations for net charts
 net['date_p'] = pd.to_datetime(net['date'])
-net['week_p']  = net['date_p'].dt.to_period('W')
+net['week_p']  = net['date_p'].dt.to_period('W-SAT')
 net['month_p'] = net['date_p'].dt.to_period('M')
 
 net_weekly  = net.groupby('week_p')[['avg_available','median_available','total_disabled','empty_stations','no_electric_stations']].mean().reset_index().tail(16)
