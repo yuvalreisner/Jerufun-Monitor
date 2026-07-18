@@ -827,7 +827,10 @@ except ImportError:
 html = html.replace('__MAPS_KEY__', _MAPS_KEY)
 
 # ── Malf trend-figure placeholders ────────────────────────────────────────────
-html = html.replace('__MALF_VAL__', f'{total_disabled:,} אופניים תקולים ({disabled_pct}%)')
+# Use last graph point (daily average) so card matches what the chart shows
+_card_pct = malf_a[-1] if malf_a else disabled_pct
+_card_abs = int(malf_abs[-1]) if malf_abs else total_disabled
+html = html.replace('__MALF_VAL__', f'{_card_abs:,} אופניים תקולים ({_card_pct}%)')
 _delta_cls  = 'up' if disabled_delta > 0 else 'down'
 _delta_sign = '+' if disabled_delta > 0 else '−'
 html = html.replace('__MALF_DELTA_CLS__', _delta_cls)
