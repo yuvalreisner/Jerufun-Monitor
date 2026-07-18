@@ -788,7 +788,7 @@
   <section id="trend-malfunction">
     <div class="section-head">
       <div>
-        <h3><span class="num-tag">05</span> ⚠️ טרנד אופניים תקולים<i class="info-btn" data-tip="אחוז האופניים התקולים מכלל צי האופניים ברשת, לאורך זמן.">i</i></h3>
+        <h3><span class="num-tag">05</span> ⚠️ טרנד אופניים תקולים<i class="info-btn" data-tip="אחוז האופניים התקולים מכלל צי האופניים ברשת, לאורך זמן. הגרף מציג ממוצע יומי של כל המדידות שנאספו באותו יום.">i</i></h3>
       </div>
       <div class="segmented" id="malfPeriod"><button class="active" data-period="daily">יומי</button><button data-period="weekly">שבועי</button><button data-period="monthly">חודשי</button></div>
     </div>
@@ -1704,11 +1704,12 @@
       var off = Math.max(0, total - n);
       var a = (d.a||[]).slice(off);
       var b = d.b ? d.b.slice(off) : null;
+      var c = d.c ? d.c.slice(off) : null;
       var labels = (d.labels||[]).slice(off);
       var sunday = [];
       (d.sunday||[]).forEach(function(i){ if(i>=off) sunday.push(i-off); });
       var fn = (window._jeruUpdateFns||{})[chartKey];
-      if(fn) fn({labels:labels, sunday:sunday, a:a, b:b});
+      if(fn) fn({labels:labels, sunday:sunday, a:a, b:b, c:c});
     };
 
     // Select station: updates station chart with per-station daily data
