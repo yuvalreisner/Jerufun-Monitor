@@ -1077,6 +1077,33 @@
   (function(){
     var _origRides = null;
 
+    function rollupRides(name, period){
+      var hist = (DATA.rides_by_station || {})[name];
+      if (!hist || !hist.daily || !hist.daily.dates) return null;
+      var dates = hist.daily.dates, a = hist.daily.a || [], b = hist.daily.b || [];
+      var groups = {};
+      dates.forEach(function(d, i){
+        var key;
+        if (period === 'weekly'){
+          var dt = new Date(d + 'T12:00:00');
+          dt.setDate(dt.getDate() - dt.getDay());
+          key = dt.toISOString().slice(0, 10);
+        } else {
+          key = d.slice(0, 7);
+        }
+        if (!groups[key]) groups[key] = {a:0, b:0};
+        groups[key].a += (a[i]||0);
+        groups[key].b += (b[i]||0);
+      });
+      var keys = Object.keys(groups).sort();
+      return {
+        labels: keys.map(function(k){ var d=new Date(k+'T12:00:00'); return d.getDate()+'/'+(d.getMonth()+1); }),
+        sunday: [], dates: keys,
+        a: keys.map(function(k){ return groups[k].a; }),
+        b: keys.map(function(k){ return groups[k].b; })
+      };
+    }
+
     function stationAvg7(name){
       var st = (DATA.rides_by_station || {})[name];
       if (!st || !st.daily) return 0;
@@ -1106,8 +1133,8 @@
         if (!stData) return;
         DATA.rides.daily   = stData.daily;
         DATA.rides.hourly  = stData.hourly;
-        DATA.rides.weekly  = stData.daily;
-        DATA.rides.monthly = stData.daily;
+        DATA.rides.weekly  = rollupRides(s.name, 'weekly')  || {labels:[], sunday:[], a:[], b:[]};
+        DATA.rides.monthly = rollupRides(s.name, 'monthly') || {labels:[], sunday:[], a:[], b:[]};
         var period = (document.querySelector('#ridesPeriod button.active')||{}).getAttribute('data-period') || 'daily';
         var slider = document.getElementById('ridesSlider');
         var n = slider ? parseInt(slider.value,10) : 14;
