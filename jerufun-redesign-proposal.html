@@ -566,13 +566,13 @@
   <section id="station-sec">
     <div class="section-head">
       <div>
-        <h3><span class="num-tag">02</span> 🔍 מספר אופניים בתחנה<i class="info-btn" data-tip="ממוצע אופניים זמינים בתחנה הנבחרת. בגרף שעתי הנתונים המוצגים הם הנתונים המדויקים.">i</i></h3>
+        <h3><span class="num-tag">02</span> 🔍 מספר אופניים בתחנה<i class="info-btn" data-tip="שעתי: נתוני אמת (ממוצע לכל שעה) ב-72 השעות האחרונות. יומי: ממוצע יומי של כל המדידות. שבועי/חודשי: ממוצע של כל הממוצעים היומיים בתקופה.">i</i></h3>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <div class="segmented" id="stationChartType">
           <button class="active" data-view="bars">📊 עמודות</button><button data-view="line">📈 קו</button>
         </div>
-        <div class="segmented" id="stationPeriod"><button class="active" data-period="daily">יומי</button><button data-period="weekly">שבועי</button><button data-period="monthly">חודשי</button>
+        <div class="segmented" id="stationPeriod"><button data-period="hourly">שעתי</button><button class="active" data-period="daily">יומי</button><button data-period="weekly">שבועי</button><button data-period="monthly">חודשי</button>
         </div>
       </div>
     </div>
@@ -664,6 +664,13 @@
         <input type="range" class="sf-range" id="ridesSlider" min="1" max="30" value="14">
         <span class="sf-val" id="ridesSliderVal">14 ימים</span>
         <i class="info-btn" data-tip="__SLIDER_TIP__">i</i>
+      </div>
+      <div class="inline-search" id="ridesStationSearch" style="margin-bottom:10px;">
+        <div class="search-wrap">
+          <input type="text" id="ridesStationInput" placeholder="כל התחנות — לחץ לסינון לפי תחנה" autocomplete="off">
+          <button type="button" class="clear-btn" id="ridesStationClear" aria-label="נקה" hidden>✕</button>
+        </div>
+        <div class="search-dropdown" id="ridesStationDropdown" hidden></div>
       </div>
       <div class="skyline-scroll" id="ridesBarsView">
       <div class="skyline" id="ridesSkyline">
@@ -1052,6 +1059,65 @@
       if (window._jeruSelectStation) window._jeruSelectStation(s.name);
     }
   });
+
+  // ---- rides station filter ----
+  (function(){
+    var input    = document.getElementById('ridesStationInput');
+    var dropdown = document.getElementById('ridesStationDropdown');
+    var clearBtn = document.getElementById('ridesStationClear');
+    if (!input || !dropdown) return;
+
+    var _origRides = null; // saved on first selection
+    var names = DATA.station_names || [];
+
+    function showDropdown(q){
+      var matches = q ? names.filter(function(n){ return n.includes(q); }).slice(0,8) : [];
+      if (!matches.length){ dropdown.hidden = true; return; }
+      dropdown.innerHTML = matches.map(function(n){
+        return '<div class="search-item">' + n + '</div>';
+      }).join('');
+      dropdown.hidden = false;
+      dropdown.querySelectorAll('.search-item').forEach(function(el){
+        el.addEventListener('mousedown', function(e){
+          e.preventDefault();
+          selectStation(el.textContent);
+        });
+      });
+    }
+
+    function selectStation(name){
+      if (!_origRides) _origRides = JSON.parse(JSON.stringify(DATA.rides));
+      var stData = (DATA.rides_by_station || {})[name];
+      if (!stData) return;
+      DATA.rides.daily  = stData.daily;
+      DATA.rides.hourly = stData.hourly;
+      DATA.rides.weekly  = stData.daily;  // fallback: use daily for weekly
+      DATA.rides.monthly = stData.daily;
+      input.value = name;
+      clearBtn.hidden = false;
+      dropdown.hidden = true;
+      var period = (document.querySelector('#ridesPeriod button.active')||{}).getAttribute('data-period') || 'daily';
+      var slider = document.getElementById('ridesSlider');
+      var n = slider ? parseInt(slider.value,10) : 14;
+      if (window._jeruSlice) window._jeruSlice('rides', period, n);
+    }
+
+    clearBtn.addEventListener('click', function(){
+      if (_origRides) { DATA.rides = _origRides; _origRides = null; }
+      input.value = '';
+      clearBtn.hidden = true;
+      var period = (document.querySelector('#ridesPeriod button.active')||{}).getAttribute('data-period') || 'daily';
+      var slider = document.getElementById('ridesSlider');
+      var n = slider ? parseInt(slider.value,10) : 14;
+      if (window._jeruSlice) window._jeruSlice('rides', period, n);
+    });
+
+    input.addEventListener('input', function(){ showDropdown(input.value); });
+    input.addEventListener('focus', function(){ if(input.value) showDropdown(input.value); });
+    document.addEventListener('click', function(e){
+      if (!e.target.closest('#ridesStationSearch')) dropdown.hidden = true;
+    });
+  })();
 
   // ---- ranking table: filter + sort (shared state) ----
   (function(){
@@ -1720,37 +1786,75 @@
     };
 
     // Select station: updates station chart with per-station daily data
-    window._jeruSelectStation = function(name){
+    // Compute weekly/monthly rollup from a station's daily_stations entry
+    function rollupStation(name, period) {
+      var hist = (DATA.daily_stations || {})[name];
+      if (!hist || !hist.dates) return null;
+      var groups = {};
+      hist.dates.forEach(function(d, i) {
+        var key;
+        if (period === 'weekly') {
+          var dt = new Date(d + 'T12:00:00');
+          var day = dt.getDay(); // 0=Sun
+          dt.setDate(dt.getDate() - day); // back to Sunday
+          key = dt.toISOString().slice(0, 10);
+        } else {
+          key = d.slice(0, 7); // YYYY-MM
+        }
+        if (!groups[key]) groups[key] = {a: [], b: []};
+        if (hist.a[i] != null) groups[key].a.push(hist.a[i]);
+        if (hist.b[i] != null) groups[key].b.push(hist.b[i]);
+      });
+      var sortedKeys = Object.keys(groups).sort();
+      var labels = sortedKeys.map(function(k) {
+        var d = new Date(k + 'T12:00:00');
+        return d.getDate() + '/' + (d.getMonth() + 1);
+      });
+      var avg = function(arr) {
+        return arr.length ? Math.round(arr.reduce(function(s,v){return s+v;},0)/arr.length*10)/10 : 0;
+      };
+      return {
+        labels: labels, sunday: [],
+        a: sortedKeys.map(function(k){ return avg(groups[k].a); }),
+        b: sortedKeys.map(function(k){ return avg(groups[k].b); })
+      };
+    }
+
+    window._jeruCurrentStation = '';
+
+    window._jeruSelectStation = function(name, period){
       var hist = (DATA.daily_stations || {})[name];
       if (!hist) return;
-      // Override DATA.station.daily so slider/period toggle keep working
+      window._jeruCurrentStation = name;
+
+      // Pre-populate all periods in DATA.station so slider/toggle work
       DATA.station.daily = hist;
-      // Reset to daily period button
+      var hourlyHist = (DATA.hourly_stations || {})[name];
+      DATA.station.hourly = hourlyHist || {labels:[], a:[], b:[]};
+      DATA.station.weekly  = rollupStation(name, 'weekly')  || {labels:[], a:[], b:[]};
+      DATA.station.monthly = rollupStation(name, 'monthly') || {labels:[], a:[], b:[]};
+
+      // Determine target period (default daily)
+      var targetPeriod = period || 'daily';
       var periodBtns = document.querySelectorAll('#stationPeriod button');
       periodBtns.forEach(function(b){ b.classList.remove('active'); });
-      var dailyBtn = document.querySelector('#stationPeriod button[data-period="daily"]');
-      if (dailyBtn) dailyBtn.classList.add('active');
-      // Re-render with slider applied
+      var targetBtn = document.querySelector('#stationPeriod button[data-period="' + targetPeriod + '"]');
+      if (targetBtn) targetBtn.classList.add('active');
+
+      // Apply slider slice or direct render (hourly has no slider)
       var sliderEl = document.getElementById('stationSlider');
       var n = sliderEl ? parseInt(sliderEl.value, 10) : 14;
-      var total = (hist.a || []).length;
-      var off = Math.max(0, total - n);
-      updateStation({
-        labels: hist.labels.slice(off),
-        sunday: (hist.sunday||[]).filter(function(i){ return i>=off; }).map(function(i){ return i-off; }),
-        a: hist.a.slice(off),
-        b: hist.b.slice(off)
-      });
-      // Update chart input display
+      if (window._jeruSlice) window._jeruSlice('station', targetPeriod, n);
+
+      // Update search input
       var input = document.getElementById('stationChartSearchInput');
       if (input) input.value = name;
     };
   // Initial render then apply slider defaults
     // Set initial station title and search input
     var _initStation = (DATA.station_names || [])[0] || '';
-    var _chartInput = document.getElementById('stationChartSearchInput');
-    if (_chartInput && _initStation) _chartInput.value = _initStation;
-    updateStation('daily');
+    if (_initStation) window._jeruSelectStation(_initStation, 'daily');
+    else updateStation('daily');
     updateRides('daily');
     updateMalf('daily');
     updateEmpty('daily');
