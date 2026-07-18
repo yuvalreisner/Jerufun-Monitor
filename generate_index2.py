@@ -417,7 +417,8 @@ avg_a = [round(float(v), 2) for v in net['avg_available']]
 avg_b = [round(float(v), 2) for v in net['median_available']]
 
 # Malfunction trend — show as % of total fleet (same as original index.html)
-malf_a = [round(float(v) / total_fleet * 100, 1) for v in net['total_disabled']]
+malf_a   = [round(float(v) / total_fleet * 100, 1) for v in net['total_disabled']]
+malf_abs = [round(float(v)) for v in net['total_disabled']]
 
 # Empty trend (% stations empty)
 empty_a = [round(float(v) / active_stations * 100, 1) for v in net['empty_stations']]
@@ -432,7 +433,8 @@ net_weekly  = net.groupby('week_p')[['avg_available','median_available','total_d
 nw_labels = [f"{p.end_time.date().day}/{p.end_time.date().month}" for p in net_weekly['week_p']]
 avg_w_a  = [round(float(v),2) for v in net_weekly['avg_available']]
 avg_w_b  = [round(float(v),2) for v in net_weekly['median_available']]
-malf_w_a = [round(float(v) / total_fleet * 100, 1) for v in net_weekly['total_disabled']]
+malf_w_a   = [round(float(v) / total_fleet * 100, 1) for v in net_weekly['total_disabled']]
+malf_w_abs = [round(float(v)) for v in net_weekly['total_disabled']]
 empty_w_a= [round(float(v)/active_stations*100,1) for v in net_weekly['empty_stations']]
 empty_w_b= [round(float(v)/active_stations*100,1) for v in net_weekly['no_electric_stations']]
 
@@ -440,7 +442,8 @@ net_monthly = net.groupby('month_p')[['avg_available','median_available','total_
 nm_labels = [_MONTHS_HE.get(str(p.month), str(p)) for p in net_monthly['month_p']]
 avg_m_a  = [round(float(v),2) for v in net_monthly['avg_available']]
 avg_m_b  = [round(float(v),2) for v in net_monthly['median_available']]
-malf_m_a = [round(float(v) / total_fleet * 100, 1) for v in net_monthly['total_disabled']]
+malf_m_a   = [round(float(v) / total_fleet * 100, 1) for v in net_monthly['total_disabled']]
+malf_m_abs = [round(float(v)) for v in net_monthly['total_disabled']]
 empty_m_a= [round(float(v)/active_stations*100,1) for v in net_monthly['empty_stations']]
 empty_m_b= [round(float(v)/active_stations*100,1) for v in net_monthly['no_electric_stations']]
 
@@ -505,10 +508,10 @@ data_obj = {
         'monthly': {'labels': mo_labels, 'a': mo_a, 'b': mo_b}
     },
     'malf': {
-        'daily':   {'labels': net_labels, 'dates': net_dates, 'sunday': net_sundays, 'a': malf_a},
-        'hourly':  {'labels': net_labels[-48:], 'a': malf_a[-48:]},
-        'weekly':  {'labels': nw_labels, 'a': malf_w_a},
-        'monthly': {'labels': nm_labels, 'a': malf_m_a}
+        'daily':   {'labels': net_labels, 'dates': net_dates, 'sunday': net_sundays, 'a': malf_a,   'c': malf_abs},
+        'hourly':  {'labels': net_labels[-48:], 'a': malf_a[-48:],   'c': malf_abs[-48:]},
+        'weekly':  {'labels': nw_labels, 'a': malf_w_a,   'c': malf_w_abs},
+        'monthly': {'labels': nm_labels, 'a': malf_m_a,   'c': malf_m_abs}
     },
     'empty': {
         'daily':   {'labels': net_labels, 'dates': net_dates, 'sunday': net_sundays, 'a': empty_a, 'b': empty_b},
@@ -822,6 +825,13 @@ try:
 except ImportError:
     _MAPS_KEY = os.environ.get('GOOGLE_MAPS_KEY', '')
 html = html.replace('__MAPS_KEY__', _MAPS_KEY)
+
+# ── Malf trend-figure placeholders ────────────────────────────────────────────
+html = html.replace('__MALF_VAL__', f'{total_disabled:,} אופניים תקולים ({disabled_pct}%)')
+_delta_cls  = 'up' if disabled_delta > 0 else 'down'
+_delta_sign = '+' if disabled_delta > 0 else '−'
+html = html.replace('__MALF_DELTA_CLS__', _delta_cls)
+html = html.replace('__MALF_DELTA__', f'{_delta_sign} {abs(disabled_delta)}%')
 
 # ── Write output ──────────────────────────────────────────────────────────────
 out_path = os.path.join(BASE_DIR, 'index2.html')

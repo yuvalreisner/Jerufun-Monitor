@@ -258,6 +258,9 @@
   .map-grid{ display:grid; grid-template-columns:1fr; gap:16px; }
   .map-wrap{ position:relative; border-radius:14px; overflow:hidden; background:var(--bg-panel-2); min-height:420px; border:1px solid var(--border); }
   #map-el{ width:100%; height:460px; display:block; border-radius:14px; }
+  .gm-style .gm-style-iw-c{ padding:0 !important; min-height:unset !important; border-radius:8px !important; }
+  .gm-style .gm-style-iw-d{ overflow:auto !important; padding:12px 14px !important; }
+  .gm-style .gm-style-iw-chr{ display:none !important; }
   .map-wrap svg{ width:100%; height:100%; display:block; }
   .map-legend{
     position:absolute; bottom:14px; inset-inline-start:14px; display:flex; gap:14px; flex-wrap:wrap;
@@ -304,22 +307,19 @@
   .search-dropdown .empty{ padding:14px 10px; text-align:center; font-size:12px; color:var(--text-faint); }
 
   /* ---------- station chart ---------- */
-  .area-chart{ width:100%; height:230px; }
-  .date-filter{
-    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  .area-chart{ width:100%; aspect-ratio: 700/230; height: auto; max-height: 260px; }
+  .slider-filter{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
     margin-bottom:16px; font-size:12.5px; color:var(--text-dim);
   }
-  .date-filter input[type="date"]{
-    background:var(--bg-panel-2); border:1px solid var(--border-strong); border-radius:8px;
-    padding:6px 10px; font-family:'Heebo', Arial, sans-serif; font-size:12.5px; color:var(--text);
-    color-scheme: light;
+  .slider-filter .sf-range{
+    -webkit-appearance:none; appearance:none; flex:1; min-width:120px; max-width:260px;
+    height:6px; border-radius:99px; background:var(--bg-panel-2);
+    accent-color:var(--gold); cursor:pointer;
   }
-  .date-filter button.df-apply{
-    background:var(--gold); color:var(--ink); border:0; border-radius:8px;
-    padding:7px 16px; font-size:12.5px; font-weight:700; cursor:pointer; font-family:inherit;
-  }
-  .date-filter button.df-apply:hover{ background:var(--gold-soft); }
-  .date-filter .df-status{ font-size:11.5px; color:var(--text-faint); margin-inline-start:4px; }
+  .slider-filter .sf-range::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none;
+    width:18px; height:18px; border-radius:50%; background:var(--gold); cursor:pointer; }
+  .slider-filter .sf-val{ font-weight:700; color:var(--text); min-width:80px; }
   .legend-inline{ display:flex; gap:16px; margin-top:14px; }
   .legend-inline .item{ display:flex; align-items:center; gap:7px; font-size:12px; color:var(--text-dim); }
   .legend-inline .sw{ width:12px; height:12px; border-radius:4px; }
@@ -341,6 +341,10 @@
   /* ---------- table ---------- */
   table.ranking{ width:100%; min-width:480px; border-collapse:collapse; font-size:13px; }
   table.ranking th{ text-align:right; color:var(--text-faint); font-weight:500; font-size:11.5px; padding:0 10px 12px; border-bottom:1px solid var(--border-strong); }
+  table.ranking th.sort-col{ cursor:pointer; user-select:none; white-space:nowrap; }
+  table.ranking th.sort-col:hover{ color:var(--text); }
+  table.ranking th.active-sort{ color:var(--teal); }
+  table.ranking th .sort-arrow{ font-size:10px; margin-right:3px; opacity:0.6; }
   table.ranking.sticky-head th{ position:sticky; top:0; background:var(--bg-panel); padding-top:8px; z-index:2; }
   table.ranking td{ padding:12px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
   table.ranking tr:last-child td{ border-bottom:0; }
@@ -533,7 +537,7 @@
   <section id="map-sec">
     <div class="section-head">
       <div>
-        <h3><span class="num-tag">01</span> 🗺️ מפה אינטראקטיבית<i class="info-btn" data-tip="תצוגה חיה של כלל תחנות הרשת. צבע הנקודה משקף את מצב התחנה; לחיצה על תחנה פותחת את הגרף בסעיף הבא.">i</i></h3>
+        <h3><span class="num-tag">01</span> 🗺️ מפת תחנות<i class="info-btn" data-tip="תצוגה חיה של כלל תחנות הרשת. צבע הנקודה משקף את מצב התחנה; לחיצה על תחנה פותחת את הגרף בסעיף הבא.">i</i></h3>
       </div>
     </div>
     <div class="map-grid">
@@ -565,20 +569,18 @@
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <div class="segmented" id="stationChartType">
-          <button data-view="bars">📊 עמודות</button><button class="active" data-view="line">📈 קו</button>
+          <button class="active" data-view="bars">📊 עמודות</button><button data-view="line">📈 קו</button>
         </div>
         <div class="segmented" id="stationPeriod"><button class="active" data-period="daily">יומי</button><button data-period="weekly">שבועי</button><button data-period="monthly">חודשי</button>
         </div>
       </div>
     </div>
     <div class="panel">
-      <div class="date-filter">
-        <span>הצג נתונים בין</span>
-        <input type="date" id="stationDateFrom" value="2026-06-30">
-        <span>ל-</span>
-        <input type="date" id="stationDateTo" value="2026-07-12">
-        <button type="button" class="df-apply" id="stationDateApply">החל</button>
-        <span class="df-status" id="stationDateStatus">מציג: 30/6 – 12/7</span>
+      <div class="slider-filter">
+        <span>הצג</span>
+        <input type="range" class="sf-range" id="stationSlider" min="1" max="30" value="14">
+        <span class="sf-val" id="stationSliderVal">14 ימים</span>
+        <i class="info-btn" data-tip="__SLIDER_TIP__">i</i>
       </div>
       <div class="inline-search" id="stationChartSearch">
         <div class="search-box">
@@ -588,7 +590,7 @@
         </div>
         <div class="search-dropdown" id="stationChartDropdown" hidden></div>
       </div>
-      <div id="stationLineView">
+      <div id="stationLineView" hidden>
       <svg class="area-chart" viewBox="0 0 700 230" preserveAspectRatio="none">
         <defs>
           <linearGradient id="fillGold" x1="0" y1="0" x2="0" y2="1">
@@ -607,7 +609,7 @@
         <g id="stationChartDyn"></g>
       </svg>
       </div>
-      <div id="stationBarsView" hidden>
+      <div id="stationBarsView">
         <div class="skyline-scroll">
         <div class="skyline" id="stationSkyline">
           <div class="col bar-hover" style="height:25%;" data-date="30/6" data-regular="8" data-electric="2" data-total="10"><span class="bar-value">10</span><div class="bar-fill"><div class="seg regular" style="height:80%;"></div><div class="seg electric" style="height:20%;"></div></div></div>
@@ -644,7 +646,7 @@
   <section id="rides">
     <div class="section-head">
       <div>
-        <h3><span class="num-tag">03</span> 🚴 כמות נסיעות משוערכת לאורך זמן<i class="info-btn" data-tip="כל ירידה בכמות האופניים בתחנה בין שתי מדידות עוקבות נספרת כנסיעה.">i</i></h3>
+        <h3><span class="num-tag">03</span> 🚴 כמות נסיעות<i class="info-btn" data-tip="כל ירידה בכמות האופניים בתחנה בין שתי מדידות עוקבות נספרת כנסיעה. החל מ-14/7/2026 הנתונים נאספים כל 15 דקות ומאפשרים דיוק גבוה יותר.">i</i></h3>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <div class="segmented" id="ridesChartType">
@@ -656,13 +658,11 @@
       </div>
     </div>
     <div class="panel">
-      <div class="date-filter">
-        <span>הצג נתונים בין</span>
-        <input type="date" id="ridesDateFrom" value="2026-06-29">
-        <span>ל-</span>
-        <input type="date" id="ridesDateTo" value="2026-07-12">
-        <button type="button" class="df-apply" id="ridesDateApply">החל</button>
-        <span class="df-status" id="ridesDateStatus">מציג: 29/6 – 12/7</span>
+      <div class="slider-filter">
+        <span>הצג</span>
+        <input type="range" class="sf-range" id="ridesSlider" min="1" max="30" value="14">
+        <span class="sf-val" id="ridesSliderVal">14 ימים</span>
+        <i class="info-btn" data-tip="__SLIDER_TIP__">i</i>
       </div>
       <div class="skyline-scroll" id="ridesBarsView">
       <div class="skyline" id="ridesSkyline">
@@ -715,15 +715,12 @@
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <div class="segmented" id="rankingTypeFilter"><button class="active" data-type="all">הכל</button><button data-type="electric">⚡ חשמלי</button><button data-type="regular">🚲 רגיל</button></div>
-        <div class="segmented" id="rankingSort">
-          <button class="active" data-sort="bikes" data-dir="desc"><span class="arrow">↓</span> כמות אופניים</button><button data-sort="rides" data-dir="desc"><span class="arrow">↓</span> נסיעות השבוע</button>
-        </div>
       </div>
     </div>
     <div class="panel">
       <div style="overflow-x:auto; overflow-y:auto; max-height:340px;">
       <table class="ranking sticky-head">
-        <thead><tr><th>תחנה</th><th>כמות אופניים עדכנית</th><th>מספר נסיעות בשבוע האחרון</th></tr></thead>
+        <thead><tr><th>תחנה</th><th class="sort-col active-sort" data-sort="bikes" data-dir="desc">כמות אופניים עדכנית <span class="sort-arrow">↓</span></th><th class="sort-col" data-sort="rides" data-dir="desc">נסיעות השבוע <span class="sort-arrow"></span></th></tr></thead>
         <tbody id="rankingBody">
           <tr data-bikes="28" data-rides="312"><td class="station-name">תחנה מרכזית — כניסה דרומית</td>
             <td><div class="bar-cell bar-hover2" data-total="28" data-regular="18" data-electric="10" data-total-label="סה״כ אופניים" data-label="תחנה מרכזית — כניסה דרומית · כמות אופניים"><span class="bar-num" data-total="28" data-regular="18" data-electric="10">28</span><div class="bar-track"><div class="seg regular" style="width:64.29%;"></div><div class="seg electric" style="width:35.71%;"></div></div></div></td>
@@ -796,15 +793,13 @@
       <div class="segmented" id="malfPeriod"><button class="active" data-period="daily">יומי</button><button data-period="weekly">שבועי</button><button data-period="monthly">חודשי</button></div>
     </div>
     <div class="panel">
-      <div class="date-filter">
-        <span>הצג נתונים בין</span>
-        <input type="date" id="malfDateFrom" value="2026-07-02">
-        <span>ל-</span>
-        <input type="date" id="malfDateTo" value="2026-07-12">
-        <button type="button" class="df-apply" id="malfDateApply">החל</button>
-        <span class="df-status" id="malfDateStatus">מציג: 2/7 – 12/7</span>
+      <div class="slider-filter">
+        <span>הצג</span>
+        <input type="range" class="sf-range" id="malfSlider" min="1" max="30" value="14">
+        <span class="sf-val" id="malfSliderVal">14 ימים</span>
+        <i class="info-btn" data-tip="__SLIDER_TIP__">i</i>
       </div>
-      <div class="trend-figure" style="margin-bottom:10px;"><span class="val num">3.2%</span><span class="delta up">+ 6.1%</span><span style="font-size:11.5px;color:var(--text-faint);">לעומת שבוע שעבר</span></div>
+      <div class="trend-figure" style="margin-bottom:10px;"><span class="val num">__MALF_VAL__</span><span class="delta __MALF_DELTA_CLS__">__MALF_DELTA__</span><span style="font-size:11.5px;color:var(--text-faint);">לעומת שבוע שעבר</span></div>
       <svg class="area-chart" viewBox="0 0 700 230" preserveAspectRatio="none">
         <g stroke="var(--border)" stroke-width="1">
           <line x1="0" y1="40" x2="700" y2="40"/><line x1="0" y1="90" x2="700" y2="90"/>
@@ -823,13 +818,11 @@
       <div class="segmented" id="emptyPeriod"><button class="active" data-period="daily">יומי</button><button data-period="weekly">שבועי</button><button data-period="monthly">חודשי</button></div>
     </div>
     <div class="panel">
-      <div class="date-filter">
-        <span>הצג נתונים בין</span>
-        <input type="date" id="emptyDateFrom" value="2026-07-02">
-        <span>ל-</span>
-        <input type="date" id="emptyDateTo" value="2026-07-12">
-        <button type="button" class="df-apply" id="emptyDateApply">החל</button>
-        <span class="df-status" id="emptyDateStatus">מציג: 2/7 – 12/7</span>
+      <div class="slider-filter">
+        <span>הצג</span>
+        <input type="range" class="sf-range" id="emptySlider" min="1" max="30" value="14">
+        <span class="sf-val" id="emptySliderVal">14 ימים</span>
+        <i class="info-btn" data-tip="__SLIDER_TIP__">i</i>
       </div>
       <div style="display:flex;gap:22px;flex-wrap:wrap;margin-bottom:10px;">
         <div class="trend-figure" style="margin-bottom:0;"><span class="val num" style="font-size:20px;color:var(--red);">7%</span><span class="delta down">− 3.4%</span><span style="font-size:11.5px;color:var(--text-faint);">לעומת שבוע שעבר</span></div>
@@ -916,13 +909,11 @@
       <div class="segmented" id="avgPeriod"><button class="active" data-period="daily">יומי</button><button data-period="weekly">שבועי</button><button data-period="monthly">חודשי</button></div>
     </div>
     <div class="panel">
-      <div class="date-filter">
-        <span>הצג נתונים בין</span>
-        <input type="date" id="avgDateFrom" value="2026-07-02">
-        <span>ל-</span>
-        <input type="date" id="avgDateTo" value="2026-07-12">
-        <button type="button" class="df-apply" id="avgDateApply">החל</button>
-        <span class="df-status" id="avgDateStatus">מציג: 2/7 – 12/7</span>
+      <div class="slider-filter">
+        <span>הצג</span>
+        <input type="range" class="sf-range" id="avgSlider" min="1" max="30" value="14">
+        <span class="sf-val" id="avgSliderVal">14 ימים</span>
+        <i class="info-btn" data-tip="__SLIDER_TIP__">i</i>
       </div>
       <svg class="area-chart" viewBox="0 0 700 230" preserveAspectRatio="none">
         <g stroke="var(--border)" stroke-width="1">
@@ -973,38 +964,7 @@
     {x:110,y:200,c:'var(--gold)', name:'שכונת בוכרים', bikes:'5 ✡'}
   ];
 
-  // generate station pulse dots on the map
-  (function(){
-    var svg = document.getElementById('stationDots');
-    stations.forEach(function(s, i){
-      var ring = document.createElementNS('http://www.w3.org/2000/svg','circle');
-      ring.setAttribute('cx', s.x); ring.setAttribute('cy', s.y); ring.setAttribute('r', 5);
-      ring.setAttribute('fill', 'none'); ring.setAttribute('stroke', s.c); ring.setAttribute('stroke-width', 1.4);
-      ring.setAttribute('opacity', 0.6);
-      var anim = document.createElementNS('http://www.w3.org/2000/svg','animate');
-      anim.setAttribute('attributeName','r'); anim.setAttribute('values','3;11;3'); anim.setAttribute('dur', (2 + (i%4)*0.3)+'s');
-      anim.setAttribute('repeatCount','indefinite');
-      var animO = document.createElementNS('http://www.w3.org/2000/svg','animate');
-      animO.setAttribute('attributeName','opacity'); animO.setAttribute('values','0.6;0;0'); animO.setAttribute('dur', (2 + (i%4)*0.3)+'s');
-      animO.setAttribute('repeatCount','indefinite');
-      ring.appendChild(anim); ring.appendChild(animO);
-      svg.appendChild(ring);
-
-      var dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
-      dot.setAttribute('cx', s.x); dot.setAttribute('cy', s.y); dot.setAttribute('r', 4.5);
-      dot.setAttribute('fill', s.c);
-      svg.appendChild(dot);
-
-      var selectRing = document.createElementNS('http://www.w3.org/2000/svg','circle');
-      selectRing.setAttribute('cx', s.x); selectRing.setAttribute('cy', s.y); selectRing.setAttribute('r', 10);
-      selectRing.setAttribute('fill', 'none'); selectRing.setAttribute('stroke', 'var(--text)');
-      selectRing.setAttribute('stroke-width', 2); selectRing.setAttribute('opacity', 0);
-      selectRing.style.transition = 'opacity .25s ease';
-      svg.appendChild(selectRing);
-      s.selectRing = selectRing;
-    });
-  })();
-
+    // station dots handled by Google Maps initMap
   // ---- reusable station search widget ----
   function setupStationSearch(opts){
     var input = document.getElementById(opts.inputId);
@@ -1029,8 +989,10 @@
       matches.forEach(function(s){
         var opt = document.createElement('div');
         opt.className = 'opt';
+        var bkColor = s.available > 0 ? 'var(--teal)' : 'var(--red)';
+        var bkCount = s.available !== undefined ? s.available + ' זמינים' : '';
         opt.innerHTML = '<span>' + s.name + '</span>' +
-          '<span class="status"><span class="sw" style="background:' + s.c + ';"></span>' + s.bikes + '</span>';
+          '<span class="status"><span class="sw" style="background:' + bkColor + ';"></span>' + bkCount + '</span>';
         opt.addEventListener('click', function(){
           input.value = s.name;
           clearBtn.hidden = false;
@@ -1066,56 +1028,142 @@
     });
   }
 
-  function clearMapHighlights(){
-    stations.forEach(function(s){ s.selectRing.setAttribute('opacity', 0); });
-  }
+  function clearMapHighlights(){ /* Google Maps handles highlighting via markers */ }
 
   setupStationSearch({
     inputId:'stationSearchInput', dropdownId:'stationDropdown',
     clearBtnId:'stationSearchClear', wrapId:'mapSearch',
     onSelect:function(s){
-      clearMapHighlights();
-      s.selectRing.setAttribute('opacity', 1);
-      setTimeout(function(){ s.selectRing.setAttribute('opacity', 0); }, 2600);
+      var entry = window._markerMap && window._markerMap[s.name];
+      if (entry) {
+        window._gmap.panTo({lat: s.lat, lng: s.lng});
+        window._gmap.setZoom(16);
+        entry.openInfo();
+      }
     }
   });
 
   setupStationSearch({
     inputId:'stationChartSearchInput', dropdownId:'stationChartDropdown',
-    clearBtnId:'stationChartSearchClear', wrapId:'stationChartSearch'
+    clearBtnId:'stationChartSearchClear', wrapId:'stationChartSearch',
+    onSelect:function(s){
+      if (window._jeruSelectStation) window._jeruSelectStation(s.name);
+    }
   });
 
-  // ---- ranking table sort ----
+  // ---- ranking table: filter + sort (shared state) ----
   (function(){
-    var sortBtns = document.querySelectorAll('#rankingSort button');
-    var tbody = document.getElementById('rankingBody');
-    if (!tbody) return;
+    var filterBtns = document.querySelectorAll('#rankingTypeFilter button');
+    var sortCols   = document.querySelectorAll('table.ranking th.sort-col');
+    var table      = document.querySelector('table.ranking');
+    var tbody      = document.getElementById('rankingBody');
+    if (!table || !tbody) return;
 
-    function applySort(btn){
-      var key = btn.getAttribute('data-sort') === 'rides' ? 'rides' : 'bikes';
-      var dir = btn.getAttribute('data-dir') === 'asc' ? 'asc' : 'desc';
-      btn.querySelector('.arrow').textContent = dir === 'asc' ? '↑' : '↓';
+    var currentType = 'all';
+
+    function rowValue(tr, sortKey, type){
+      var nums = tr.querySelectorAll('.bar-num');
+      var el = sortKey === 'rides' ? nums[1] : nums[0];
+      if (!el) return parseInt(tr.getAttribute('data-' + sortKey), 10) || 0;
+      var attr = type === 'electric' ? 'data-electric'
+               : type === 'regular'  ? 'data-regular' : 'data-total';
+      return parseInt(el.getAttribute(attr), 10) || 0;
+    }
+
+    function applySort(th, toggleDir){
+      if (toggleDir){
+        if (th.classList.contains('active-sort')){
+          th.setAttribute('data-dir', th.getAttribute('data-dir') === 'asc' ? 'desc' : 'asc');
+        } else {
+          th.setAttribute('data-dir', 'desc');
+        }
+      }
+      var key = th.getAttribute('data-sort');
+      var dir = th.getAttribute('data-dir');
+      sortCols.forEach(function(h){
+        h.classList.remove('active-sort');
+        h.querySelector('.sort-arrow').textContent = '';
+      });
+      th.classList.add('active-sort');
+      th.querySelector('.sort-arrow').textContent = dir === 'asc' ? '↑' : '↓';
       var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
       rows.sort(function(a, b){
-        var av = parseInt(a.getAttribute('data-' + key), 10);
-        var bv = parseInt(b.getAttribute('data-' + key), 10);
-        return dir === 'asc' ? av - bv : bv - av;
+        return dir === 'asc'
+          ? rowValue(a, key, currentType) - rowValue(b, key, currentType)
+          : rowValue(b, key, currentType) - rowValue(a, key, currentType);
       });
       rows.forEach(function(r){ tbody.appendChild(r); });
     }
 
-    sortBtns.forEach(function(btn){
-      btn.addEventListener('click', function(){
-        if (btn.classList.contains('active')){
-          // already the active sort column: flip direction
-          btn.setAttribute('data-dir', btn.getAttribute('data-dir') === 'asc' ? 'desc' : 'asc');
+    function applyFilter(type){
+      currentType = type;
+      table.classList.remove('filter-electric', 'filter-regular');
+      if (type === 'electric') table.classList.add('filter-electric');
+      if (type === 'regular')  table.classList.add('filter-regular');
+
+      // Update displayed numbers
+      table.querySelectorAll('.bar-num').forEach(function(el){
+        var attr = type === 'electric' ? 'data-electric'
+                 : type === 'regular'  ? 'data-regular' : 'data-total';
+        el.textContent = el.getAttribute(attr);
+      });
+
+      // Update bar widths: scale each column relative to its own max of the filtered type
+      var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+      [0, 1].forEach(function(colIdx){
+        var cells = rows.map(function(tr){
+          return tr.querySelectorAll('.bar-cell')[colIdx];
+        }).filter(Boolean);
+
+        if (type === 'all'){
+          // restore: bikes = reg/total + elec/total; rides = absolute (max 30)
+          var MAX_R = Math.max.apply(null, cells.map(function(c){ return parseInt(c.getAttribute('data-total'),10)||0; }));
+          if (MAX_R === 0) MAX_R = 1;
+          cells.forEach(function(cell){
+            var total = parseInt(cell.getAttribute('data-total'),10)||0;
+            var reg   = parseInt(cell.getAttribute('data-regular'),10)||0;
+            var elec  = parseInt(cell.getAttribute('data-electric'),10)||0;
+            var base  = colIdx === 0 ? (total||1) : MAX_R;
+            cell.querySelector('.seg.regular').style.width  = (reg/base*100).toFixed(1)+'%';
+            cell.querySelector('.seg.electric').style.width = (elec/base*100).toFixed(1)+'%';
+          });
         } else {
-          sortBtns.forEach(function(b){ b.classList.remove('active'); });
-          btn.classList.add('active');
+          var attr = type === 'electric' ? 'data-electric' : 'data-regular';
+          var maxVal = Math.max.apply(null, cells.map(function(c){ return parseInt(c.getAttribute(attr),10)||0; }));
+          if (maxVal === 0) maxVal = 1;
+          cells.forEach(function(cell){
+            var val = parseInt(cell.getAttribute(attr),10)||0;
+            var pct = (val/maxVal*100).toFixed(1)+'%';
+            var regSeg  = cell.querySelector('.seg.regular');
+            var elecSeg = cell.querySelector('.seg.electric');
+            if (type === 'electric'){
+              regSeg.style.width  = '0%';
+              elecSeg.style.width = pct;
+            } else {
+              regSeg.style.width  = pct;
+              elecSeg.style.width = '0%';
+            }
+          });
         }
-        applySort(btn);
+      });
+
+      var activeTh = table.querySelector('th.active-sort');
+      if (activeTh) applySort(activeTh, false);
+    }
+
+    filterBtns.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        filterBtns.forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        applyFilter(btn.getAttribute('data-type'));
       });
     });
+
+    sortCols.forEach(function(th){
+      th.addEventListener('click', function(){ applySort(th, true); });
+    });
+
+    applySort(table.querySelector('th[data-sort="bikes"]'), false);
   })();
 
   // ---- compact nav dropdown ----
@@ -1168,71 +1216,86 @@
     });
   })();
 
-  // ---- date-range filters (graphs 02 & 03) ----
+  // ---- slider filters ----
   (function(){
-    function formatDMY(isoStr){
-      var parts = isoStr.split('-');
-      if (parts.length !== 3) return isoStr;
-      var d = parseInt(parts[2], 10);
-      var m = parseInt(parts[1], 10);
-      return d + '/' + m;
-    }
+    var SLIDER_CFG = {
+      hourly:  { min:6,  max:48, def:24, units:'שעות' },
+      daily:   { min:3,  max:30, def:14, units:'ימים' },
+      weekly:  { min:2,  max:16, def:8,  units:'שבועות' },
+      monthly: { min:2,  max:12, def:6,  units:'חודשים' }
+    };
 
-    function wireDateFilter(fromId, toId, btnId, statusId){
-      var fromEl = document.getElementById(fromId);
-      var toEl = document.getElementById(toId);
-      var btn = document.getElementById(btnId);
-      var status = document.getElementById(statusId);
-      if (!fromEl || !toEl || !btn || !status) return;
-      btn.addEventListener('click', function(){
-        if (!fromEl.value || !toEl.value) return;
-        if (fromEl.value > toEl.value){
-          status.textContent = 'טווח לא תקין — תאריך ההתחלה מאוחר מתאריך הסיום';
-          status.style.color = 'var(--red)';
-          return;
-        }
-        status.style.color = '';
-        status.textContent = 'מציג: ' + formatDMY(fromEl.value) + ' – ' + formatDMY(toEl.value);
+    // per-chart memory of last slider value per period
+    var sliderMem = {};
+
+    function wireSlider(sliderId, valId, chartKey, periodGroupId){
+      var slider  = document.getElementById(sliderId);
+      var valEl   = document.getElementById(valId);
+      var group   = document.getElementById(periodGroupId);
+      if (!slider || !valEl) return;
+
+      var currentPeriod = 'daily';
+
+      function getActivePeriod(){
+        if (!group) return 'daily';
+        var active = group.querySelector('button.active');
+        return active ? (active.getAttribute('data-period') || 'daily') : 'daily';
+      }
+
+      function applySlice(period, n){
+        if (window._jeruSlice) window._jeruSlice(chartKey, period, n);
+      }
+
+      function setSlider(period){
+        var cfg = SLIDER_CFG[period] || SLIDER_CFG.daily;
+        var mem = (sliderMem[chartKey] || {})[period];
+        var val = mem !== undefined ? mem : cfg.def;
+        slider.min   = cfg.min;
+        slider.max   = cfg.max;
+        slider.value = Math.min(Math.max(val, cfg.min), cfg.max);
+        valEl.textContent = slider.value + ' ' + cfg.units;
+        currentPeriod = period;
+      }
+
+      slider.addEventListener('input', function(){
+        var period = getActivePeriod();
+        var cfg    = SLIDER_CFG[period] || SLIDER_CFG.daily;
+        var n = parseInt(slider.value, 10);
+        valEl.textContent = n + ' ' + cfg.units;
+        if (!sliderMem[chartKey]) sliderMem[chartKey] = {};
+        sliderMem[chartKey][period] = n;
+        applySlice(period, n);
       });
+
+      // hook into period toggles — setTimeout so wirePeriodToggle runs first
+      if (group){
+        group.querySelectorAll('button').forEach(function(btn){
+          btn.addEventListener('click', function(){
+            var period = btn.getAttribute('data-period') || 'daily';
+            setTimeout(function(){
+              setSlider(period);
+              applySlice(period, parseInt(slider.value, 10));
+            }, 0);
+          });
+        });
+      }
+
+      // init with default period
+      setSlider('daily');
     }
 
-    wireDateFilter('stationDateFrom', 'stationDateTo', 'stationDateApply', 'stationDateStatus');
-    wireDateFilter('ridesDateFrom', 'ridesDateTo', 'ridesDateApply', 'ridesDateStatus');
-    wireDateFilter('malfDateFrom', 'malfDateTo', 'malfDateApply', 'malfDateStatus');
-    wireDateFilter('emptyDateFrom', 'emptyDateTo', 'emptyDateApply', 'emptyDateStatus');
-    wireDateFilter('avgDateFrom', 'avgDateTo', 'avgDateApply', 'avgDateStatus');
+    window._jeruUpdate = function(chartKey, fd){
+      var fns = window._jeruUpdateFns || {};
+      var fn = fns[chartKey]; if (fn) fn(fd);
+    };
+
+    wireSlider('stationSlider','stationSliderVal','station','stationPeriod');
+    wireSlider('ridesSlider',  'ridesSliderVal',  'rides',  'ridesPeriod');
+    wireSlider('malfSlider',   'malfSliderVal',   'malf',   'malfPeriod');
+    wireSlider('emptySlider',  'emptySliderVal',  'empty',  'emptyPeriod');
+    wireSlider('avgSlider',    'avgSliderVal',    'avg',    'avgPeriod');
   })();
 
-  // ---- ranking table type filter (all / electric / regular) ----
-  (function(){
-    var filterBtns = document.querySelectorAll('#rankingTypeFilter button');
-    var table = document.querySelector('table.ranking');
-    if (!table) return;
-
-    function applyFilter(type){
-      table.classList.remove('filter-electric', 'filter-regular');
-      if (type === 'electric') table.classList.add('filter-electric');
-      if (type === 'regular') table.classList.add('filter-regular');
-
-      table.querySelectorAll('.bar-num').forEach(function(el){
-        if (type === 'electric'){
-          el.textContent = el.getAttribute('data-electric');
-        } else if (type === 'regular'){
-          el.textContent = el.getAttribute('data-regular');
-        } else {
-          el.textContent = el.getAttribute('data-total');
-        }
-      });
-    }
-
-    filterBtns.forEach(function(btn){
-      btn.addEventListener('click', function(){
-        filterBtns.forEach(function(b){ b.classList.remove('active'); });
-        btn.classList.add('active');
-        applyFilter(btn.getAttribute('data-type'));
-      });
-    });
-  })();
 
   // ---- chart hover tooltips ----
   (function(){
@@ -1260,7 +1323,9 @@
       ttElectricDot.style.background = d.electricColor ? 'var(--' + d.electricColor + ')' : 'var(--gold)';
       if (d.total || d.totalRaw){
         ttTotal.hidden = false;
-        ttTotal.textContent = d.totalRaw || ((d.totalLabel || 'סה״כ נסיעות') + ': ' + d.total);
+        var mainText = d.totalRaw || ((d.totalLabel || 'סה״כ נסיעות') + ': ' + d.total);
+        var extraText = d.extra ? (' | ' + (d.extraLabel || '') + ': ' + d.extra + ' אופניים') : '';
+        ttTotal.textContent = mainText + extraText;
       } else {
         ttTotal.hidden = true;
       }
@@ -1388,10 +1453,12 @@
       return { labels: labels, sunday: sunday, a: d.a, b: d.b || null };
     }
 
+    var X_PAD = 28; // horizontal padding so first/last points aren't clipped
     function xPositions(n){
       var xs = [];
+      var w = 700 - 2 * X_PAD;
       for (var i = 0; i < n; i++){
-        xs.push(i === n - 1 ? 698 : Math.round((i / (n - 1)) * 700 * 10) / 10);
+        xs.push(Math.round((X_PAD + (i / (n - 1)) * w) * 10) / 10);
       }
       return xs;
     }
@@ -1456,19 +1523,21 @@
         html += '</g>';
       });
 
-      // x-axis labels
+      // x-axis labels (thinned when many points)
+      var labelStep = n <= 8 ? 1 : n <= 16 ? 2 : n <= 30 ? 5 : 8;
       html += '<g font-family="Heebo" font-size="10.5" fill="var(--text-faint)">';
       xs.forEach(function(x, i){
+        if (i !== 0 && i !== n-1 && i % labelStep !== 0) return;
         var anchor = i === 0 ? 'start' : (i === n-1 ? 'end' : 'middle');
         var isSun = sunday.indexOf(i) !== -1;
         var style = isSun ? ' fill="var(--gold)" font-weight="700"' : '';
-        html += '<text x="' + (i===n-1?700:x) + '" y="' + cfg.xAxisY + '" text-anchor="' + anchor + '"' + style + '>' + labels[i] + '</text>';
+        html += '<text x="' + x + '" y="' + cfg.xAxisY + '" text-anchor="' + anchor + '"' + style + '>' + labels[i] + '</text>';
       });
       html += '</g>';
 
       // hover bands
       var mids = []; for (var i = 0; i < n - 1; i++) mids.push((xs[i] + xs[i+1]) / 2);
-      var bounds = [0].concat(mids).concat([700]);
+      var bounds = [0].concat(mids).concat([700]); // extend to SVG edges for hit-testing
       html += '<g class="hover-layer">';
       for (var i = 0; i < n; i++){
         var w = Math.round((bounds[i+1] - bounds[i]) * 10) / 10;
@@ -1481,7 +1550,8 @@
         } else {
           var s0 = cfg.series[0];
           html += '<rect class="hover-band" x="' + Math.round(bounds[i]*10)/10 + '" y="0" width="' + w + '" height="' + (yBottom+42) + '" data-date="' + dateLabel + '" ' +
-            'data-total="' + fmt(s0.values[i], s0.decimals) + (s0.suffix||'') + '" data-total-label="' + (cfg.totalLabel||'ערך') + '"/>';
+            'data-total="' + fmt(s0.values[i], s0.decimals) + (s0.suffix||'') + '" data-total-label="' + (cfg.totalLabel||'ערך') + '"' +
+            (s0.extraValues ? ' data-extra="' + Math.round(s0.extraValues[i]) + '" data-extra-label="' + (s0.extraLabel||'') + '"' : '') + '/>';
         }
       }
       html += '</g>';
@@ -1523,8 +1593,8 @@
     }
 
     // ---- STATION chart update ----
-    function updateStation(period){
-      var d = getPeriodData('station', period);
+    function updateStation(periodOrData){
+      var d = (typeof periodOrData === 'object' && periodOrData !== null) ? periodOrData : getPeriodData('station', periodOrData);
       var lineHTML = buildLineChartHTML({
         labels: d.labels, sunday: d.sunday, yTop: 45, yBottom: 188, xAxisY: 215,
         series: [
@@ -1543,8 +1613,8 @@
     }
 
     // ---- RIDES chart update ----
-    function updateRides(period){
-      var d = getPeriodData('rides', period);
+    function updateRides(periodOrData){
+      var d = (typeof periodOrData === 'object' && periodOrData !== null) ? periodOrData : getPeriodData('rides', periodOrData);
       var lineHTML = buildLineChartHTML({
         labels: d.labels, sunday: d.sunday, yTop: 45, yBottom: 188, xAxisY: 215,
         series: [
@@ -1563,11 +1633,11 @@
     }
 
     // ---- MALFUNCTION chart update ----
-    function updateMalf(period){
-      var d = getPeriodData('malf', period);
+    function updateMalf(periodOrData){
+      var d = (typeof periodOrData === 'object' && periodOrData !== null) ? periodOrData : getPeriodData('malf', periodOrData);
       var html = buildLineChartHTML({
         labels: d.labels, sunday: d.sunday, yTop: 45, yBottom: 188, xAxisY: 215,
-        series: [ { values: d.a, color: 'var(--red)', decimals: 1, suffix: '%' } ],
+        series: [ { values: d.a, color: 'var(--red)', decimals: 1, suffix: '%', extraValues: d.c, extraLabel: 'תקולים' } ],
         totalLabel: 'אחוז תקולים'
       });
       var dyn = document.getElementById('malfDyn');
@@ -1575,8 +1645,8 @@
     }
 
     // ---- EMPTY STATIONS chart update ----
-    function updateEmpty(period){
-      var d = getPeriodData('empty', period);
+    function updateEmpty(periodOrData){
+      var d = (typeof periodOrData === 'object' && periodOrData !== null) ? periodOrData : getPeriodData('empty', periodOrData);
       var html = buildLineChartHTML({
         labels: d.labels, sunday: d.sunday, yTop: 45, yBottom: 188, xAxisY: 215,
         series: [
@@ -1589,8 +1659,8 @@
     }
 
     // ---- AVG/MEDIAN chart update ----
-    function updateAvg(period){
-      var d = getPeriodData('avg', period);
+    function updateAvg(periodOrData){
+      var d = (typeof periodOrData === 'object' && periodOrData !== null) ? periodOrData : getPeriodData('avg', periodOrData);
       var html = buildLineChartHTML({
         labels: d.labels, sunday: d.sunday, yTop: 45, yBottom: 188, xAxisY: 215,
         series: [
@@ -1625,12 +1695,62 @@
 
     window._jeruData = DATA;
     window._jeruShabbat = DATA.shabbat_stations || [];
-  // Initial render (daily view, matching the active button on load)
+    window._jeruUpdateFns = { station:updateStation, rides:updateRides, malf:updateMalf, empty:updateEmpty, avg:updateAvg };
+
+    // slice helper: uses getPeriodData so PERIOD_LABELS fallback works
+    window._jeruSlice = function(chartKey, period, n){
+      var d = getPeriodData(chartKey, period);
+      var total = (d.a || []).length;
+      var off = Math.max(0, total - n);
+      var a = (d.a||[]).slice(off);
+      var b = d.b ? d.b.slice(off) : null;
+      var labels = (d.labels||[]).slice(off);
+      var sunday = [];
+      (d.sunday||[]).forEach(function(i){ if(i>=off) sunday.push(i-off); });
+      var fn = (window._jeruUpdateFns||{})[chartKey];
+      if(fn) fn({labels:labels, sunday:sunday, a:a, b:b});
+    };
+
+    // Select station: updates station chart with per-station daily data
+    window._jeruSelectStation = function(name){
+      var hist = (DATA.daily_stations || {})[name];
+      if (!hist) return;
+      // Override DATA.station.daily so slider/period toggle keep working
+      DATA.station.daily = hist;
+      // Reset to daily period button
+      var periodBtns = document.querySelectorAll('#stationPeriod button');
+      periodBtns.forEach(function(b){ b.classList.remove('active'); });
+      var dailyBtn = document.querySelector('#stationPeriod button[data-period="daily"]');
+      if (dailyBtn) dailyBtn.classList.add('active');
+      // Re-render with slider applied
+      var sliderEl = document.getElementById('stationSlider');
+      var n = sliderEl ? parseInt(sliderEl.value, 10) : 14;
+      var total = (hist.a || []).length;
+      var off = Math.max(0, total - n);
+      updateStation({
+        labels: hist.labels.slice(off),
+        sunday: (hist.sunday||[]).filter(function(i){ return i>=off; }).map(function(i){ return i-off; }),
+        a: hist.a.slice(off),
+        b: hist.b.slice(off)
+      });
+      // Update chart input display
+      var input = document.getElementById('stationChartSearchInput');
+      if (input) input.value = name;
+    };
+  // Initial render then apply slider defaults
+    // Set initial station title and search input
+    var _initStation = (DATA.station_names || [])[0] || '';
+    var _chartInput = document.getElementById('stationChartSearchInput');
+    if (_chartInput && _initStation) _chartInput.value = _initStation;
     updateStation('daily');
     updateRides('daily');
     updateMalf('daily');
     updateEmpty('daily');
     updateAvg('daily');
+    // sliders apply their initial slice now that _jeruSlice is ready
+    document.querySelectorAll('.sf-range').forEach(function(el){
+      el.dispatchEvent(new Event('input'));
+    });
   })();
 
 </script>
@@ -1642,7 +1762,7 @@ function _makeMarkerIcon(available, disabled, shabbat) {
   var fs    = available >= 10 ? 9 : 11;
   var ring  = shabbat ? '<circle cx="15" cy="14" r="10" fill="none" stroke="#f0b429" stroke-width="2.5"/>' : '';
   var star  = shabbat ? '<text x="26" y="7" text-anchor="middle" font-size="10" font-family="Arial">✡</text>' : '';
-  var label = available > 0 ? available : (disabled > 0 ? '🔧' : '');
+  var label = available > 0 ? available : (disabled > 0 ? '🔧' : '0');
   var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="38" viewBox="0 0 30 38">'
     + '<path d="M15 0C6.716 0 0 6.716 0 15c0 8.284 15 23 15 23S30 23.284 30 15C30 6.716 23.284 0 15 0z" fill="' + color + '"/>'
     + '<circle cx="15" cy="14" r="10" fill="white"/>'
@@ -1670,6 +1790,20 @@ function initMap() {
 
   var iw = new google.maps.InfoWindow();
   window._closeIW = function(){ iw.close(); };
+  window._gmap = gmap;
+  window._markerMap = {};
+
+  function buildIWContent(s, shabbat) {
+    return '<div style="direction:rtl;min-width:160px;font-family:Heebo,Arial,sans-serif;position:relative">'
+      + '<span onclick="_closeIW()" style="position:absolute;top:-2px;left:-2px;cursor:pointer;font-size:13px;color:#aaa;line-height:1;padding:2px 5px">✕</span>'
+      + '<strong style="font-size:13px">' + s.name + '</strong><br>'
+      + (s.address ? '<span style="color:#888;font-size:11px">' + s.address + '</span><br>' : '')
+      + (shabbat ? '<span style="color:#f0b429;font-size:11px">✡ פעילה בשבת לחשמליות</span><br>' : '')
+      + `<span style="color:#f0b429">⚡ חשמלי: ${s.electric}</span><br>`
+      + `<span style="color:#2980b9">🚲 רגיל: ${s.regular}</span><br>`
+      + `<span>🔧 תקולים: ${s.disabled}</span>`
+      + '</div>';
+  }
 
   (data.stations_geo || []).forEach(function(s) {
     if (!s.lat || !s.lng) return;
@@ -1680,19 +1814,13 @@ function initMap() {
       icon: _makeMarkerIcon(s.available, s.disabled, shabbat),
       title: s.name
     });
-    marker.addListener('click', function() {
-      iw.setContent(
-        '<div style="direction:rtl;min-width:160px;font-family:Heebo,Arial,sans-serif;position:relative">'
-        + '<span onclick="_closeIW()" style="position:absolute;top:-2px;left:-2px;cursor:pointer;font-size:13px;color:#aaa;padding:2px 5px">✕</span>'
-        + '<strong style="font-size:13px">' + s.name + '</strong><br>'
-        + (shabbat ? '<span style="color:#f0b429;font-size:11px">✡ פעילה בשבת לחשמליות</span><br>' : '')
-        + '<span style="color:#f0b429">⚡ חשמלי: ' + s.electric + '</span><br>'
-        + '<span style="color:#0ea5a0">🚲 רגיל: ' + s.regular + '</span><br>'
-        + '<span>🔧 תקולים: ' + s.disabled + '</span>'
-        + '</div>'
-      );
+    function openInfo() {
+      iw.setContent(buildIWContent(s, shabbat));
       iw.open(gmap, marker);
-    });
+      if (window._jeruSelectStation) window._jeruSelectStation(s.name);
+    }
+    marker.addListener('click', openInfo);
+    window._markerMap[s.name] = { marker: marker, openInfo: openInfo, s: s };
   });
 }
 </script>
