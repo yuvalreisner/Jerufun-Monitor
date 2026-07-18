@@ -1457,7 +1457,7 @@
       var d = DATA[chartKey][period];
       var labels = d.labels || PERIOD_LABELS[period];
       var sunday = d.sunday || [];
-      return { labels: labels, sunday: sunday, a: d.a, b: d.b || null };
+      return { labels: labels, sunday: sunday, a: d.a, b: d.b || null, c: d.c || null };
     }
 
     var X_PAD = 28; // horizontal padding so first/last points aren't clipped
