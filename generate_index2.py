@@ -416,8 +416,8 @@ net_labels, net_sundays = make_labels_and_sundays(net_dates)
 avg_a = [round(float(v), 2) for v in net['avg_available']]
 avg_b = [round(float(v), 2) for v in net['median_available']]
 
-# Malfunction trend
-malf_a = [round(float(v), 2) for v in net['total_disabled']]
+# Malfunction trend — show as % of total fleet (same as original index.html)
+malf_a = [round(float(v) / total_fleet * 100, 1) for v in net['total_disabled']]
 
 # Empty trend (% stations empty)
 empty_a = [round(float(v) / active_stations * 100, 1) for v in net['empty_stations']]
@@ -432,7 +432,7 @@ net_weekly  = net.groupby('week_p')[['avg_available','median_available','total_d
 nw_labels = [f"{p.end_time.date().day}/{p.end_time.date().month}" for p in net_weekly['week_p']]
 avg_w_a  = [round(float(v),2) for v in net_weekly['avg_available']]
 avg_w_b  = [round(float(v),2) for v in net_weekly['median_available']]
-malf_w_a = [round(float(v),2) for v in net_weekly['total_disabled']]
+malf_w_a = [round(float(v) / total_fleet * 100, 1) for v in net_weekly['total_disabled']]
 empty_w_a= [round(float(v)/active_stations*100,1) for v in net_weekly['empty_stations']]
 empty_w_b= [round(float(v)/active_stations*100,1) for v in net_weekly['no_electric_stations']]
 
@@ -440,7 +440,7 @@ net_monthly = net.groupby('month_p')[['avg_available','median_available','total_
 nm_labels = [_MONTHS_HE.get(str(p.month), str(p)) for p in net_monthly['month_p']]
 avg_m_a  = [round(float(v),2) for v in net_monthly['avg_available']]
 avg_m_b  = [round(float(v),2) for v in net_monthly['median_available']]
-malf_m_a = [round(float(v),2) for v in net_monthly['total_disabled']]
+malf_m_a = [round(float(v) / total_fleet * 100, 1) for v in net_monthly['total_disabled']]
 empty_m_a= [round(float(v)/active_stations*100,1) for v in net_monthly['empty_stations']]
 empty_m_b= [round(float(v)/active_stations*100,1) for v in net_monthly['no_electric_stations']]
 
