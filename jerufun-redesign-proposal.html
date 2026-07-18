@@ -297,6 +297,7 @@
     box-shadow:var(--shadow); padding:6px;
   }
   .inline-search .search-dropdown{ position:absolute; top:100%; inset-inline-start:0; inset-inline-end:0; z-index:6; }
+  #ridesStationSearch{ z-index:20; }
   .search-dropdown .opt{
     display:flex; align-items:center; justify-content:space-between; gap:8px;
     padding:8px 10px; border-radius:8px; cursor:pointer; font-size:12.5px;
@@ -1488,7 +1489,7 @@
       monthly: ["פבר׳","מרץ","אפר׳","מאי","יוני","יולי"]
     };
 
-    var DATA = {
+    window.DATA = {
       station: {
         daily:   { labels:["30/6","1/7","2/7","3/7","4/7","5/7","6/7","7/7","8/7","9/7","10/7","11/7","12/7"], sunday:[5,12],
                    a:[8,14,6,20,16,26,22,28,19,24,17,26,23], b:[2,4,1,8,5,10,7,12,6,9,4,10,8] },
