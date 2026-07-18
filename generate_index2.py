@@ -397,7 +397,7 @@ wr_a = [int(v) for v in weekly_agg['reg']] if not weekly_agg.empty else []
 wr_b = [int(v) for v in weekly_agg['elec']] if not weekly_agg.empty else []
 wr_labels = []
 for p in (weekly_agg['week'] if not weekly_agg.empty else []):
-    ed = p.end_time.date()
+    ed = p.start_time.date()
     wr_labels.append(f'{ed.day}/{ed.month}')
 
 # Monthly rides (sum by month) with Hebrew labels
@@ -430,7 +430,7 @@ net['week_p']  = net['date_p'].dt.to_period('W-SAT')
 net['month_p'] = net['date_p'].dt.to_period('M')
 
 net_weekly  = net.groupby('week_p')[['avg_available','median_available','total_disabled','empty_stations','no_electric_stations']].mean().reset_index().tail(16)
-nw_labels = [f"{p.end_time.date().day}/{p.end_time.date().month}" for p in net_weekly['week_p']]
+nw_labels = [f"{p.start_time.date().day}/{p.start_time.date().month}" for p in net_weekly['week_p']]
 avg_w_a  = [round(float(v),2) for v in net_weekly['avg_available']]
 avg_w_b  = [round(float(v),2) for v in net_weekly['median_available']]
 malf_w_a   = [round(float(v) / total_fleet * 100, 1) for v in net_weekly['total_disabled']]
