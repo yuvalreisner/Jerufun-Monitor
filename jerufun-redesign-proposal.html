@@ -403,6 +403,7 @@
   .chart-tooltip .tt-row b{ margin-inline-start:auto; color:var(--text); font-weight:700; }
   .chart-tooltip .tt-dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
   .chart-tooltip .tt-total{ font-size:11.5px; color:var(--text-faint); margin-top:6px; padding-top:6px; border-top:1px solid var(--border); }
+  .chart-tooltip .tt-extra{ font-size:11.5px; color:var(--text-dim); margin-top:3px; }
   .hover-band{ fill:transparent; pointer-events:all; cursor:pointer; }
   .hover-band:hover{ fill:color-mix(in srgb, var(--text) 5%, transparent); }
   .bar-hover{ cursor:pointer; }
@@ -936,6 +937,7 @@
   <div class="tt-row"><span class="tt-dot" id="ttRegularDot" style="background:var(--teal);"></span><span id="ttRegularLabel">רגיל</span><b id="ttRegular"></b></div>
   <div class="tt-row"><span class="tt-dot" id="ttElectricDot" style="background:var(--gold);"></span><span id="ttElectricLabel">חשמלי</span><b id="ttElectric"></b></div>
   <div class="tt-total" id="ttTotal"></div>
+  <div class="tt-extra" id="ttExtra" hidden></div>
 </div>
 
 <footer>
@@ -1308,6 +1310,7 @@
     var ttRegularDot = document.getElementById('ttRegularDot');
     var ttElectricDot = document.getElementById('ttElectricDot');
     var ttTotal = document.getElementById('ttTotal');
+    var ttExtra = document.getElementById('ttExtra');
 
     function showTooltip(el, evt){
       var d = el.dataset;
@@ -1323,11 +1326,15 @@
       ttElectricDot.style.background = d.electricColor ? 'var(--' + d.electricColor + ')' : 'var(--gold)';
       if (d.total || d.totalRaw){
         ttTotal.hidden = false;
-        var mainText = d.totalRaw || ((d.totalLabel || 'סה״כ נסיעות') + ': ' + d.total);
-        var extraText = d.extra ? (' | ' + (d.extraLabel || '') + ': ' + d.extra + ' אופניים') : '';
-        ttTotal.textContent = mainText + extraText;
+        ttTotal.textContent = d.totalRaw || ((d.totalLabel || 'סה״כ נסיעות') + ': ' + d.total);
       } else {
         ttTotal.hidden = true;
+      }
+      if (d.extra !== undefined && d.extra !== '') {
+        ttExtra.hidden = false;
+        ttExtra.textContent = (d.extraLabel || '') + ': ' + d.extra + ' אופניים';
+      } else {
+        ttExtra.hidden = true;
       }
       tooltip.hidden = false;
       moveTooltip(evt);
