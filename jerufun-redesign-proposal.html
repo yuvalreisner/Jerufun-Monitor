@@ -671,6 +671,7 @@
           <span class="icon">🔍</span>
           <input type="text" id="ridesStationInput" placeholder="לחץ לסינון לפי תחנה" autocomplete="off">
           <button type="button" class="clear-btn" id="ridesStationClear" aria-label="נקה" hidden>✕</button>
+          <i class="info-btn" data-tip="ממוצע נסיעות ליום ב-7 הימים האחרונים. ימים ללא נסיעות רשומות נספרים כ-0.">i</i>
         </div>
         <div class="search-dropdown" id="ridesStationDropdown" hidden></div>
       </div>
@@ -1076,12 +1077,13 @@
   (function(){
     var _origRides = null;
 
-    function stationTotal(name){
+    function stationAvg7(name){
       var st = (DATA.rides_by_station || {})[name];
       if (!st || !st.daily) return 0;
-      var a = st.daily.a || [], b = st.daily.b || [], s = 0;
-      for (var i = 0; i < a.length; i++) s += (a[i]||0) + (b[i]||0);
-      return s;
+      var a = st.daily.a || [], b = st.daily.b || [];
+      var len = a.length, days = Math.min(7, len), s = 0;
+      for (var i = len - days; i < len; i++) s += (a[i]||0) + (b[i]||0);
+      return Math.round(s / 7 * 10) / 10;
     }
 
     setupStationSearch({
@@ -1092,11 +1094,11 @@
       getStations: function(q){
         var names = Object.keys(DATA.rides_by_station || {});
         if (q) names = names.filter(function(n){ return n.indexOf(q) !== -1; });
-        names.sort(function(a, b){ return stationTotal(b) - stationTotal(a); });
-        return names.map(function(n){ return { name: n, total: stationTotal(n) }; });
+        names.sort(function(a, b){ return stationAvg7(b) - stationAvg7(a); });
+        return names.map(function(n){ return { name: n, avg: stationAvg7(n) }; });
       },
       renderStatus: function(s){
-        return '<span class="sw" style="background:var(--teal);"></span>' + s.total + ' נסיעות';
+        return '<span class="sw" style="background:var(--teal);"></span>' + s.avg + ' נסיעות/יום';
       },
       onSelect: function(s){
         if (!_origRides) _origRides = JSON.parse(JSON.stringify(DATA.rides));
