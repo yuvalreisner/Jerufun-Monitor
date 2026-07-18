@@ -308,6 +308,16 @@ def get_all_daily_station_summary() -> dict:
     return result
 
 
+def upsert_station_shabbat(station_id: str, is_shabbat: bool):
+    conn = get_conn()
+    conn.execute("""
+        INSERT INTO station_meta (station_id, is_shabbat_station) VALUES (?, ?)
+        ON CONFLICT(station_id) DO UPDATE SET is_shabbat_station = excluded.is_shabbat_station
+    """, (station_id, int(is_shabbat)))
+    conn.commit()
+    conn.close()
+
+
 def upsert_station_address(station_id: str, address: str):
     conn = get_conn()
     conn.execute("""
