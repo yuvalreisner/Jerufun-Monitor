@@ -666,10 +666,8 @@ html = html.replace('<title>ירופאן — הצעת עיצוב חדשה</title
                     '<title>ירופאן — דשבורד ירושלים (ניסיון עיצוב)</title>')
 
 # 2. Topbar timestamp
-html = html.replace(
-    'עדכון אחרון: 14:32 17/7',
-    f'עדכון אחרון: {last_update}'
-)
+html = re.sub(r'עדכון אחרון: \d{1,2}:\d{2} \d{1,2}/\d{1,2}',
+             f'עדכון אחרון: {last_update}', html)
 
 # 3. KPI card: אופניים זמינים (format: total / available, with delta)
 avail_delta_cls = 'good' if avail_delta >= 0 else 'bad'
