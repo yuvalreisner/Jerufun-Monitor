@@ -427,6 +427,7 @@
     .skyline{ gap:3px; }
     .skyline-labels{ gap:3px; }
     .skyline .col{ min-width:22px; }
+    .skyline-labels span{ min-width:22px; overflow:hidden; }
     .skyline .bar-value{ font-size:9px; }
     .skyline-scroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
     .area-chart{ height:auto; }
@@ -1956,9 +1957,15 @@
     }
 
     function buildBarsLabelsHTML(labels, sunday){
+      var n = labels.length;
+      var step = n <= 10 ? 1 : n <= 20 ? 2 : 5;
       return labels.map(function(l, i){
         var isSun = sunday.indexOf(i) !== -1;
-        return isSun ? '<span style="color:var(--gold);font-weight:700;">' + l + '</span>' : '<span>' + l + '</span>';
+        var show = (i % step === 0) || (i === n - 1) || isSun;
+        if (!show) return '<span></span>';
+        return isSun
+          ? '<span style="color:var(--gold);font-weight:700;">' + l + '</span>'
+          : '<span>' + l + '</span>';
       }).join('');
     }
 
