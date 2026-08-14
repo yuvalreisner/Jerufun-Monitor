@@ -87,22 +87,12 @@ def collect_once() -> int:
     return len(rows)
 
 
-def _try_regenerate():
-    try:
-        import generate_dashboard
-        generate_dashboard.generate()
-        log.info("Dashboard regenerated")
-    except Exception as e:
-        log.warning("Dashboard regeneration failed: %s", e)
-
-
 def run_loop():
     init_db()
     log.info("Collector started — polling every %d minutes", POLL_INTERVAL_MINUTES)
     while True:
         try:
             collect_once()
-            _try_regenerate()
         except Exception as e:
             log.error("Collection failed: %s", e)
         time.sleep(POLL_INTERVAL_MINUTES * 60)
@@ -116,6 +106,5 @@ if __name__ == "__main__":
     if args.once:
         init_db()
         collect_once()
-        _try_regenerate()
     else:
         run_loop()
