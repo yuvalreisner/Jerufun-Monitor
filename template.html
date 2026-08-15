@@ -1977,11 +1977,14 @@
       var d = (typeof periodOrData === 'object' && periodOrData !== null) ? periodOrData : getPeriodData('station', periodOrData);
       var lineHTML = buildLineChartHTML({
         labels: d.labels, sunday: d.sunday, datetimes: d.datetimes, yTop: 45, yBottom: 188, xAxisY: 215,
-        series: [
-          { values: d.a, color: 'var(--teal)', decimals: 0, fill: 'url(#fillTeal)', tooltipLabel:'רגיל', colorName:'teal' },
-          { values: d.b, color: 'var(--gold)', decimals: 0, fill: 'url(#fillGold)', tooltipLabel:'חשמלי', colorName:'gold' },
-          { values: d.c || [], color: 'var(--slate)', decimals: 0, fill: 'url(#fillSlate)', tooltipLabel:'תקול', colorName:'slate' }
-        ]
+        series: (function(){
+          var s = [
+            { values: d.a, color: 'var(--teal)', decimals: 0, fill: 'url(#fillTeal)', tooltipLabel:'רגיל', colorName:'teal' },
+            { values: d.b, color: 'var(--gold)', decimals: 0, fill: 'url(#fillGold)', tooltipLabel:'חשמלי', colorName:'gold' }
+          ];
+          if (d.c && d.c.length) s.push({ values: d.c, color: 'var(--slate)', decimals: 0, fill: 'url(#fillSlate)', tooltipLabel:'תקול', colorName:'slate' });
+          return s;
+        })()
       });
       var dyn = document.getElementById('stationChartDyn');
       if (dyn) dyn.innerHTML = lineHTML;
