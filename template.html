@@ -30,6 +30,7 @@
     --teal:#2e7d74;
     --teal-soft:#5fa89f;
     --green:#4a9e6b;
+    --slate-dark:#6b7280;
     --slate:#5b6472;
 
     --bg: var(--parchment);
@@ -193,7 +194,7 @@
   .kpi.empty::before{ display:none; }
   .kpi.empty .placeholder{ font-size:12.5px; color:var(--text-faint); }
 
-  .kpi.donut{ padding:16px 20px 18px; display:flex; flex-direction:column; align-items:center; }
+  .kpi.donut{ --accent: var(--slate-dark); padding:16px 20px 18px; display:flex; flex-direction:column; align-items:center; }
   .kpi.donut .donut-title{ align-self:flex-start; font-size:12.5px; color:var(--text-dim); margin-bottom:4px; }
   .donut-wrap{ position:relative; width:100%; max-width:220px; }
   .donut-wrap svg{ width:100%; display:block; }
@@ -208,7 +209,7 @@
   .donut-legend .leg.regular{ color:var(--teal); }
   .kpi{
     background:var(--bg-panel); border:1px solid var(--border);
-    border-radius:18px; padding:20px 22px; position:relative; overflow:hidden;
+    border-radius:18px; padding:28px 26px; position:relative; overflow:hidden; display:flex; flex-direction:column;
     box-shadow:var(--shadow);
   }
   .kpi::before{
@@ -217,13 +218,14 @@
   }
   .kpi-label{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
   .kpi-label span.name{ font-size:12.5px; color:var(--text-dim); }
-  .kpi-value{ font-family:'Heebo', Arial, sans-serif; font-size:34px; font-weight:800; line-height:1; }
+  .kpi-value{ font-family:'Heebo', Arial, sans-serif; font-size:46px; font-weight:800; line-height:1; }
   .kpi-sub{ font-size:12px; color:var(--text-faint); margin-top:8px; }
   .kpi-delta{
     display:flex; align-items:center; gap:5px;
     font-size:12px; margin-top:10px; color:var(--text-dim);
   }
-  .kpi-delta .arrow{ font-size:10px; line-height:1; }
+  .kpi-delta{ font-size:15px; margin-top:auto; padding-top:12px; }
+  .kpi-delta .arrow{ font-size:12px; line-height:1; }
   .kpi-delta.good{ color:var(--teal); }
   .kpi-delta.bad{ color:var(--red); }
   .kpi-delta.neutral{ color:var(--text-faint); }
@@ -233,6 +235,7 @@
   .kpi.teal{ --accent: var(--teal); }
   .kpi.red{ --accent: var(--red); }
   .kpi.slate{ --accent: var(--slate); }
+  .kpi.neutral{ --accent: var(--slate-dark); }
 
   /* ---------- generic section ---------- */
   section{ padding:72px 4px 28px; scroll-margin-top:90px; }
@@ -452,9 +455,9 @@
     .kpi-delta .ctx{ display:none; }
     .kpi.donut{ padding:10px; }
     /* hide long title; show number above the arc */
-    .kpi.donut .donut-title{ display:none; }
+    .kpi.donut .donut-title{ display:block; font-size:12px; margin-bottom:6px; }
     .donut-wrap{ max-width:140px; display:flex; flex-direction:column-reverse; align-items:center; }
-    .donut-center{ position:static; text-align:center; margin-bottom:2px; }
+    .donut-center{ display:none; }
     .donut-center .n{ font-size:18px; }
     .donut-center .l{ font-size:10px; }
     header.topbar{ padding:8px 12px; flex-wrap:nowrap; gap:8px; }
@@ -552,14 +555,14 @@
     </div>
 
     <div class="kpi-grid">
-      <div class="kpi gold">
+      <div class="kpi neutral">
         <div class="kpi-label"><span class="name">אופניים זמינים</span></div>
         <div class="kpi-value num">91%</div>
         <div class="kpi-sub num">728 / 660 אופניים</div>
       <div class="kpi-delta good"><span class="arrow">▲</span><span class="value num">3%</span><span class="ctx">לעומת שבוע שעבר באותה שעה</span></div>
       </div>
       <div class="kpi donut">
-        <div class="donut-title">יחס אופניים חשמליים/רגילים</div>
+        <div class="donut-title">יחס אופניים חשמלי/רגיל</div>
         <div class="donut-wrap">
           <svg viewBox="0 0 260 128" fill="none">
             <path d="M 46.0 122.0 A 84 84 0 0 1 163.36 44.91" stroke="var(--gold)" stroke-width="30" stroke-linecap="butt"/>
@@ -575,23 +578,23 @@
           <div class="leg regular">🚲 <span class="num">37%</span></div>
         </div>
       </div>
-      <div class="kpi red">
+      <div class="kpi neutral">
         <div class="kpi-label"><span class="name">תחנות ריקות כעת</span></div>
         <div class="kpi-value num">7</div>
         <div class="kpi-delta bad"><span class="arrow">▲</span><span class="value num">3 תחנות</span><span class="ctx">לעומת שבוע שעבר באותה שעה</span></div>
       </div>
-      <div class="kpi slate">
+      <div class="kpi neutral">
         <div class="kpi-label"><span class="name">אופניים תקולים</span></div>
         <div class="kpi-value num">9%</div>
         <div class="kpi-sub num">728 / 68 אופניים</div>
         <div class="kpi-delta good"><span class="arrow">▼</span><span class="value num">2.3%</span><span class="ctx">לעומת שבוע שעבר באותה שעה</span></div>
       </div>
-      <div class="kpi teal">
+      <div class="kpi neutral">
         <div class="kpi-label"><span class="name">מספר נסיעות יומי</span></div>
         <div class="kpi-value num">9</div>
         <div class="kpi-delta good"><span class="arrow">▲</span><span class="value num">7.4%</span><span class="ctx">לעומת שבוע שעבר באותה שעה</span></div>
       </div>
-      <div class="kpi teal">
+      <div class="kpi neutral">
         <div class="kpi-label"><span class="name">תחנות פעילות</span></div>
         <div class="kpi-value num">121</div>
         <div class="kpi-delta neutral"><span class="arrow">–</span><span class="value num">ללא שינוי</span><span class="ctx">לעומת שבוע שעבר באותה שעה</span></div>
