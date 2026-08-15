@@ -712,6 +712,20 @@ html = re.sub(
     lambda m: m.group(1) + str(empty_stations) + m.group(2),
     html, count=1, flags=re.DOTALL
 )
+# 5b. תחנות ריקות — delta (fewer empty = good)
+empty_delta_cls = 'good' if empty_delta <= 0 else 'bad'
+empty_delta_arrow = '▼' if empty_delta < 0 else ('▲' if empty_delta > 0 else '–')
+empty_delta_html = (
+    f'<div class="kpi-delta {empty_delta_cls}">'
+    f'<span class="arrow">{empty_delta_arrow}</span>'
+    f'<span class="value num">{abs(empty_delta)} תחנות</span>'
+    f'<span class="ctx">לעומת שבוע שעבר באותה שעה</span></div>'
+) if wow_fleet > 0 else ''
+html = re.sub(
+    r'(תחנות ריקות כעת</span>.*?kpi-value num.*?</div>)\s*<div class="kpi-delta[^"]*">.*?</div>',
+    r'\1\n      ' + empty_delta_html,
+    html, count=1, flags=re.DOTALL
+)
 
 # 6. KPI: אופניים תקולים (format: total / disabled)
 html = re.sub(
