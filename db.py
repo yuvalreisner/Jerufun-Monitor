@@ -58,12 +58,8 @@ def get_latest_snapshot() -> pd.DataFrame:
     df = pd.read_sql_query(f"""
         SELECT s.*
         FROM snapshots s
-        INNER JOIN (
-            SELECT station_id, MAX(ts) AS max_ts
-            FROM snapshots
-            GROUP BY station_id
-        ) latest ON s.station_id = latest.station_id AND s.ts = latest.max_ts
-        WHERE s.station_name NOT IN ({_BL_SQL})
+        WHERE s.ts = (SELECT MAX(ts) FROM snapshots)
+          AND s.station_name NOT IN ({_BL_SQL})
         ORDER BY s.station_name
     """, conn)
     conn.close()
@@ -335,14 +331,46 @@ def get_all_station_addresses() -> dict:
     return {r[0]: r[1] for r in rows}
 
 
-def get_daily_rides() -> pd.DataFrame:
+def get_daily_rides(shabbat_start: str = None, shabbat_end: str = None) -> pd.DataFrame:
     """
     Counts observed rides per day: negative bike deltas between consecutive
     snapshots (<=2h gap, <=5 bikes/station/snapshot — maintenance filter).
     This is a lower bound; rides that start and end between two snapshots
     at the same station are not captured.
+
+    shabbat_start / shabbat_end: Hebcal candle-lighting and havdalah times
+    (format 'YYYY-MM-DD HH:MM:SS') for the current Shabbat. When provided,
+    these exact times are used for the current Fri/Sat; historical weeks
+    fall back to the 19:05 approximation.
     """
     conn = get_conn()
+
+    if shabbat_start and shabbat_end:
+        friday_date   = shabbat_start[:10]
+        saturday_date = shabbat_end[:10]
+        elec_shabbat_clause = f"""
+                               station_name IN ({_SHAB_SQL})
+                               OR (
+                                 -- current Shabbat: use Hebcal exact times
+                                 DATE(ts) IN ('{friday_date}', '{saturday_date}')
+                                 AND (ts < '{shabbat_start}' OR ts >= '{shabbat_end}')
+                               )
+                               OR (
+                                 -- historical Fri/Sat: use 19:05 approximation
+                                 DATE(ts) NOT IN ('{friday_date}', '{saturday_date}')
+                                 AND STRFTIME('%w', ts) != '6'
+                                 AND NOT (STRFTIME('%w', ts) = '5'
+                                          AND TIME(ts) >= '19:05')
+                               )"""
+    else:
+        elec_shabbat_clause = f"""
+                               station_name IN ({_SHAB_SQL})
+                               OR (
+                                 STRFTIME('%w', ts) != '6'
+                                 AND NOT (STRFTIME('%w', ts) = '5'
+                                          AND TIME(ts) >= '19:05')
+                               )"""
+
     df = pd.read_sql_query(f"""
         WITH ordered AS (
             SELECT station_name, ts, bikes_electric, bikes_regular,
@@ -354,18 +382,10 @@ def get_daily_rides() -> pd.DataFrame:
         ),
         deltas AS (
             SELECT ts,
-                -- count each type independently; rides = elec + reg always
                 CASE WHEN (julianday(ts)-julianday(prev_ts))*24 <= 2
                           AND bikes_electric < prev_elec
                           AND (prev_elec - bikes_electric) <= 5
-                          AND (
-                               station_name IN ({_SHAB_SQL})
-                               OR (
-                                 STRFTIME('%w', ts) != '6'
-                                 AND NOT (STRFTIME('%w', ts) = '5'
-                                          AND TIME(ts) >= '19:05')
-                               )
-                             )
+                          AND ({elec_shabbat_clause})
                      THEN prev_elec - bikes_electric ELSE 0 END AS taken_elec,
                 CASE WHEN (julianday(ts)-julianday(prev_ts))*24 <= 2
                           AND bikes_regular < prev_reg
