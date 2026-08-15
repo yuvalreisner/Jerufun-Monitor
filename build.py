@@ -83,18 +83,26 @@ last_update = fmt_il_date(last_ts)
 
 # ── Week-over-week comparison ─────────────────────────────────────────────────
 conn_cmp = sqlite3.connect(DB_PATH)
-# Find snapshot closest to same hour, 7 days ago (±3h window)
+# Find the single snapshot closest to same hour 7 days ago (±1h window)
 last_dt = datetime.fromisoformat(last_ts)
 week_ago = last_dt - timedelta(days=7)
-week_from = (week_ago - timedelta(hours=3)).strftime('%Y-%m-%d %H:%M:%S')
-week_to   = (week_ago + timedelta(hours=3)).strftime('%Y-%m-%d %H:%M:%S')
+week_ago_str = week_ago.strftime('%Y-%m-%d %H:%M:%S')
+week_from = (week_ago - timedelta(hours=1)).strftime('%Y-%m-%d %H:%M:%S')
+week_to   = (week_ago + timedelta(hours=1)).strftime('%Y-%m-%d %H:%M:%S')
 
 wow_row = conn_cmp.execute(f"""
-    SELECT AVG(bikes_regular + bikes_electric) * COUNT(DISTINCT station_name) AS avail_total,
-           AVG(bikes_disabled) * COUNT(DISTINCT station_name) AS disabled_total,
+    WITH closest_ts AS (
+        SELECT ts
+        FROM snapshots
+        WHERE ts BETWEEN '{week_from}' AND '{week_to}'
+        ORDER BY ABS(julianday(ts) - julianday('{week_ago_str}'))
+        LIMIT 1
+    )
+    SELECT SUM(bikes_regular + bikes_electric) AS avail_total,
+           SUM(bikes_disabled) AS disabled_total,
            SUM(CASE WHEN bikes_regular + bikes_electric = 0 THEN 1 ELSE 0 END) AS empty_count
     FROM snapshots
-    WHERE ts BETWEEN '{week_from}' AND '{week_to}'
+    WHERE ts = (SELECT ts FROM closest_ts)
       AND station_name NOT IN ({_BL_SQL})
 """).fetchone()
 conn_cmp.close()
@@ -680,34 +688,34 @@ avail_delta_html = (
 ) if wow_fleet > 0 else ''
 
 html = re.sub(
-    r'(<div class="kpi gold">.*?<div class="kpi-value num">)[^<]*(</div>.*?<div class="kpi-sub num">)[^<]*(</div>)',
+    r'(אופניים זמינים</span>.*?<div class="kpi-value num">)[^<]*(</div>.*?<div class="kpi-sub num">)[^<]*(</div>)',
     lambda m: m.group(1) + f'{avail_pct}%' + m.group(2) + f'{total_fleet:,} / {total_available:,} אופניים' + m.group(3),
     html, count=1, flags=re.DOTALL
 )
 # Replace existing delta with real one
 html = re.sub(
-    r'(<div class="kpi gold">.*?kpi-sub num.*?</div>)\s*<div class="kpi-delta[^"]*">.*?</div>',
+    r'(אופניים זמינים</span>.*?kpi-sub num.*?</div>)\s*<div class="kpi-delta[^"]*">.*?</div>',
     r'\1\n      ' + avail_delta_html,
     html, count=1, flags=re.DOTALL
 )
 
 # 4. KPI: תחנות פעילות
 html = re.sub(
-    r'(<div class="kpi teal">\s*<div class="kpi-label"><span class="name">תחנות פעילות.*?<div class="kpi-value num">)[^<]*(</div>)',
+    r'(תחנות פעילות</span>.*?<div class="kpi-value num">)[^<]*(</div>)',
     lambda m: m.group(1) + str(active_stations) + m.group(2),
     html, count=1, flags=re.DOTALL
 )
 
 # 5. KPI: תחנות ריקות
 html = re.sub(
-    r'(<div class="kpi red">.*?<div class="kpi-value num">)[^<]*(</div>)',
+    r'(תחנות ריקות כעת</span>.*?<div class="kpi-value num">)[^<]*(</div>)',
     lambda m: m.group(1) + str(empty_stations) + m.group(2),
     html, count=1, flags=re.DOTALL
 )
 
 # 6. KPI: אופניים תקולים (format: total / disabled)
 html = re.sub(
-    r'(<div class="kpi slate">.*?<div class="kpi-value num">)[^<]*(</div>.*?<div class="kpi-sub num">)[^<]*(</div>)',
+    r'(אופניים תקולים</span>.*?<div class="kpi-value num">)[^<]*(</div>.*?<div class="kpi-sub num">)[^<]*(</div>)',
     lambda m: m.group(1) + f'{disabled_pct}%' + m.group(2) + f'{total_fleet:,} / {total_disabled:,} אופניים' + m.group(3),
     html, count=1, flags=re.DOTALL
 )
