@@ -100,7 +100,8 @@ wow_row = conn_cmp.execute(f"""
     )
     SELECT SUM(bikes_regular + bikes_electric) AS avail_total,
            SUM(bikes_disabled) AS disabled_total,
-           SUM(CASE WHEN bikes_regular + bikes_electric = 0 THEN 1 ELSE 0 END) AS empty_count
+           SUM(CASE WHEN bikes_regular + bikes_electric = 0 THEN 1 ELSE 0 END) AS empty_count,
+           COUNT(*) AS active_count
     FROM snapshots
     WHERE ts = (SELECT ts FROM closest_ts)
       AND station_name NOT IN ({_BL_SQL})
@@ -110,13 +111,15 @@ conn_cmp.close()
 wow_avail    = round(float(wow_row[0] or 0))
 wow_disabled = round(float(wow_row[1] or 0))
 wow_empty    = int(wow_row[2] or 0)
+wow_active   = int(wow_row[3] or 0)
 wow_fleet    = wow_avail + wow_disabled
 wow_avail_pct    = round(wow_avail / wow_fleet * 100) if wow_fleet > 0 else 0
 wow_disabled_pct = round(wow_disabled / wow_fleet * 100) if wow_fleet > 0 else 0
 
 avail_delta  = round(avail_pct - wow_avail_pct)
 disabled_delta = round(disabled_pct - wow_disabled_pct)
-empty_delta  = empty_stations - wow_empty
+empty_delta   = empty_stations - wow_empty
+active_delta  = active_stations - wow_active
 
 def _dt_label(h):
     """'2026-07-18T13:00' or '2026-07-18 13:00' → '18/7 13:00'"""
@@ -133,8 +136,24 @@ for _sname, _rows in hourly_sta_raw.items():
         'b': [round(float(r['elec']), 1) for r in _rows]
     }
 
+# Shabbat times from Hebcal API
+def _fetch_shabbat_times():
+    """Return (candle_lighting, havdalah) as 'YYYY-MM-DD HH:MM:SS' strings, or (None, None)."""
+    try:
+        import urllib.request as _ur, json as _js, re as _re
+        url = 'https://www.hebcal.com/shabbat?cfg=json&geonameid=281184&m=50'
+        with _ur.urlopen(url, timeout=5) as r:
+            items = _js.loads(r.read())['items']
+        candles  = next(i['date'] for i in items if i['category'] == 'candles')
+        havdalah = next(i['date'] for i in items if i['category'] == 'havdalah')
+        return candles[:19].replace('T', ' '), havdalah[:19].replace('T', ' ')
+    except Exception:
+        return None, None
+
+shabbat_start, shabbat_end = _fetch_shabbat_times()
+
 # Daily rides (all time)
-rides_raw = get_daily_rides()
+rides_raw = get_daily_rides(shabbat_start=shabbat_start, shabbat_end=shabbat_end)
 rides_raw['date'] = rides_raw['hour'].str[:10]
 daily_rides = (rides_raw.groupby('date')[['rides','elec','reg']]
                .sum().reset_index().sort_values('date'))
@@ -714,6 +733,21 @@ html = re.sub(
 html = re.sub(
     r'(תחנות פעילות</span>.*?<div class="kpi-value num">)[^<]*(</div>)',
     lambda m: m.group(1) + str(active_stations) + m.group(2),
+    html, count=1, flags=re.DOTALL
+)
+# 4b. תחנות פעילות — delta
+active_delta_cls   = 'good' if active_delta >= 0 else 'bad'
+active_delta_arrow = '▲' if active_delta > 0 else ('▼' if active_delta < 0 else '–')
+active_delta_val   = f'{abs(active_delta)} תחנות' if active_delta != 0 else 'ללא שינוי'
+active_delta_html  = (
+    f'<div class="kpi-delta {active_delta_cls}">'
+    f'<span class="arrow">{active_delta_arrow}</span>'
+    f'<span class="value num">{active_delta_val}</span>'
+    f'<span class="ctx">לעומת שבוע שעבר באותה שעה</span></div>'
+) if wow_active > 0 else ''
+html = re.sub(
+    r'(תחנות פעילות</span>.*?kpi-value num.*?</div>)\s*<div class="kpi-delta[^"]*">.*?</div>',
+    lambda m: m.group(1) + '\n      ' + active_delta_html,
     html, count=1, flags=re.DOTALL
 )
 
