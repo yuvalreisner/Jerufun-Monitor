@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generates index2.html from jerufun-redesign-proposal.html
+Generates dashboard.html from jerufun-redesign-proposal.html
 populated with real data from jerufun.db.
 """
 import os
@@ -626,7 +626,7 @@ h_from10 = hebrew_date(d_from_10)
 
 
 # ── Patch HTML ────────────────────────────────────────────────────────────────
-with open(os.path.join(BASE_DIR, 'jerufun-redesign-proposal.html'), 'r', encoding='utf-8') as f:
+with open(os.path.join(BASE_DIR, 'template.html'), 'r', encoding='utf-8') as f:
     html = f.read()
 
 # 0. Embed Heebo font as base64 so it works in CSP-restricted environments (Artifact viewer)
@@ -893,7 +893,7 @@ html = html.replace('__MALF_DELTA_CLS__', _delta_cls)
 html = html.replace('__MALF_DELTA__', f'{_delta_sign} {abs(_malf_delta)}%')
 
 # ── Write output ──────────────────────────────────────────────────────────────
-out_path = os.path.join(BASE_DIR, 'index2.html')
+out_path = os.path.join(BASE_DIR, 'dashboard.html')
 with open(out_path, 'w', encoding='utf-8') as f:
     f.write(html)
 
