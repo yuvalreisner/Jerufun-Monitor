@@ -157,6 +157,17 @@ if recent_rides.empty:
 today_rides = int(daily_rides[daily_rides['date'] == daily_rides['date'].max()]['rides'].sum()) \
               if not daily_rides.empty else 0
 
+# Rides delta: today up to current hour vs same day/hour last week
+_today_date     = daily_rides['date'].max() if not daily_rides.empty else ''
+_today_max_hour = rides_raw[rides_raw['date'] == _today_date]['hour'].max() if _today_date else ''
+_wago_date      = (pd.Timestamp(_today_date) - pd.Timedelta(days=7)).strftime('%Y-%m-%d') if _today_date else ''
+_wago_cutoff    = _wago_date + _today_max_hour[10:] if (_wago_date and _today_max_hour) else ''
+wow_rides = int(rides_raw[
+    (rides_raw['date'] == _wago_date) &
+    (rides_raw['hour'] <= _wago_cutoff)
+]['rides'].sum()) if _wago_cutoff else 0
+rides_delta = today_rides - wow_rides
+
 # Shortage leaderboard (7 days)
 shortage = get_shortage_leaderboard(hours=168)
 
@@ -753,6 +764,21 @@ html = re.sub(
 html = re.sub(
     r'(מספר נסיעות יומי.*?<div class="kpi-value num">)[^<]*(</div>)',
     lambda m: m.group(1) + f'{today_rides:,}' + m.group(2),
+    html, count=1, flags=re.DOTALL
+)
+# 7b. נסיעות יומי — delta (more rides = good)
+rides_delta_cls   = 'good' if rides_delta >= 0 else 'bad'
+rides_delta_arrow = '▲' if rides_delta > 0 else ('▼' if rides_delta < 0 else '–')
+rides_delta_val   = f'{abs(rides_delta)} נסיעות' if rides_delta != 0 else 'ללא שינוי'
+rides_delta_html  = (
+    f'<div class="kpi-delta {rides_delta_cls}">'
+    f'<span class="arrow">{rides_delta_arrow}</span>'
+    f'<span class="value num">{rides_delta_val}</span>'
+    f'<span class="ctx">לעומת שבוע שעבר באותה שעה</span></div>'
+) if wow_rides > 0 else ''
+html = re.sub(
+    r'(מספר נסיעות יומי.*?kpi-value num.*?</div>)\s*<div class="kpi-delta[^"]*">.*?</div>',
+    lambda m: m.group(1) + '\n      ' + rides_delta_html,
     html, count=1, flags=re.DOTALL
 )
 
