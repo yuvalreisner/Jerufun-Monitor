@@ -29,6 +29,7 @@
     --red-soft:#e07971;
     --teal:#2e7d74;
     --teal-soft:#5fa89f;
+    --green:#4a9e6b;
     --slate:#5b6472;
 
     --bg: var(--parchment);
@@ -84,6 +85,7 @@
   .pulse-dot.red{ background:var(--red); color:var(--red); }
   .pulse-dot.teal{ background:var(--teal); color:var(--teal); }
   .pulse-dot.slate{ background:var(--text-faint); color:var(--text-faint); }
+  .pulse-dot.green{ background:var(--green); color:var(--green); }
   @media (prefers-reduced-motion: reduce){
     .pulse-dot::after{ animation:none; opacity:.35; }
   }
@@ -515,7 +517,7 @@
   </div>
 
   <div class="topbar-right">
-  <span class="topbar-ts" id="topbarTs">עודכן ב: 13:22 12/7</span>
+  <span class="topbar-ts" id="topbarTs"><span class="pulse-dot green" style="margin-left:6px;vertical-align:middle;display:inline-block"></span>עודכן ב: 13:22 12/7</span>
   <div class="nav-dropdown" id="navDropdown">
     <button type="button" class="nav-dropdown-btn" id="navDropdownBtn">
       <span>☰ ניווט</span>
@@ -551,7 +553,7 @@
 
     <div class="kpi-grid">
       <div class="kpi gold">
-        <div class="kpi-label"><span class="name">אופניים זמינים</span><span class="pulse-dot gold"></span></div>
+        <div class="kpi-label"><span class="name">אופניים זמינים</span></div>
         <div class="kpi-value num">91%</div>
         <div class="kpi-sub num">728 / 660 אופניים</div>
       <div class="kpi-delta good"><span class="arrow">▲</span><span class="value num">3%</span><span class="ctx">לעומת שבוע שעבר באותה שעה</span></div>
@@ -574,23 +576,23 @@
         </div>
       </div>
       <div class="kpi red">
-        <div class="kpi-label"><span class="name">תחנות ריקות כעת</span><span class="pulse-dot red"></span></div>
+        <div class="kpi-label"><span class="name">תחנות ריקות כעת</span></div>
         <div class="kpi-value num">7</div>
         <div class="kpi-delta bad"><span class="arrow">▲</span><span class="value num">3 תחנות</span><span class="ctx">לעומת שבוע שעבר באותה שעה</span></div>
       </div>
       <div class="kpi slate">
-        <div class="kpi-label"><span class="name">אופניים תקולים</span><span class="pulse-dot slate"></span></div>
+        <div class="kpi-label"><span class="name">אופניים תקולים</span></div>
         <div class="kpi-value num">9%</div>
         <div class="kpi-sub num">728 / 68 אופניים</div>
         <div class="kpi-delta good"><span class="arrow">▼</span><span class="value num">2.3%</span><span class="ctx">לעומת שבוע שעבר באותה שעה</span></div>
       </div>
       <div class="kpi teal">
-        <div class="kpi-label"><span class="name">מספר נסיעות יומי</span><span class="pulse-dot teal"></span></div>
+        <div class="kpi-label"><span class="name">מספר נסיעות יומי</span></div>
         <div class="kpi-value num">9</div>
         <div class="kpi-delta good"><span class="arrow">▲</span><span class="value num">7.4%</span><span class="ctx">לעומת שבוע שעבר באותה שעה</span></div>
       </div>
       <div class="kpi teal">
-        <div class="kpi-label"><span class="name">תחנות פעילות</span><span class="pulse-dot teal"></span></div>
+        <div class="kpi-label"><span class="name">תחנות פעילות</span></div>
         <div class="kpi-value num">121</div>
         <div class="kpi-delta neutral"><span class="arrow">–</span><span class="value num">ללא שינוי</span><span class="ctx">לעומת שבוע שעבר באותה שעה</span></div>
       </div>
