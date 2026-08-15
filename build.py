@@ -753,7 +753,7 @@ html = re.sub(
 
 # 5. KPI: תחנות ריקות
 html = re.sub(
-    r'(תחנות ריקות כעת</span>.*?<div class="kpi-value num">)[^<]*(</div>)',
+    r'(תחנות ריקות</span>.*?<div class="kpi-value num">)[^<]*(</div>)',
     lambda m: m.group(1) + str(empty_stations) + m.group(2),
     html, count=1, flags=re.DOTALL
 )
@@ -767,7 +767,7 @@ empty_delta_html = (
     f'<span class="ctx">לעומת שבוע שעבר באותה שעה</span></div>'
 ) if wow_fleet > 0 else ''
 html = re.sub(
-    r'(תחנות ריקות כעת</span>.*?kpi-value num.*?</div>)\s*<div class="kpi-delta[^"]*">.*?</div>',
+    r'(תחנות ריקות</span>.*?kpi-value num.*?</div>)\s*<div class="kpi-delta[^"]*">.*?</div>',
     r'\1\n      ' + empty_delta_html,
     html, count=1, flags=re.DOTALL
 )
@@ -796,7 +796,7 @@ html = re.sub(
 
 # 7. KPI: נסיעות יומי
 html = re.sub(
-    r'(מספר נסיעות יומי.*?<div class="kpi-value num">)[^<]*(</div>)',
+    r'(סך נסיעות יומי.*?<div class="kpi-value num">)[^<]*(</div>)',
     lambda m: m.group(1) + f'{today_rides:,}' + m.group(2),
     html, count=1, flags=re.DOTALL
 )
@@ -811,7 +811,7 @@ rides_delta_html  = (
     f'<span class="ctx">לעומת שבוע שעבר באותה שעה</span></div>'
 ) if wow_rides > 0 else ''
 html = re.sub(
-    r'(מספר נסיעות יומי.*?kpi-value num.*?</div>)\s*<div class="kpi-delta[^"]*">.*?</div>',
+    r'(סך נסיעות יומי.*?kpi-value num.*?</div>)\s*<div class="kpi-delta[^"]*">.*?</div>',
     lambda m: m.group(1) + '\n      ' + rides_delta_html,
     html, count=1, flags=re.DOTALL
 )
