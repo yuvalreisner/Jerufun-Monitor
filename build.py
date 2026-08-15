@@ -695,7 +695,7 @@ html = re.sub(
 # Replace existing delta with real one
 html = re.sub(
     r'(אופניים זמינים</span>.*?kpi-sub num.*?</div>)\s*<div class="kpi-delta[^"]*">.*?</div>',
-    r'\1\n      ' + avail_delta_html,
+    lambda m: m.group(1) + '\n      ' + avail_delta_html,
     html, count=1, flags=re.DOTALL
 )
 
@@ -731,6 +731,21 @@ html = re.sub(
 html = re.sub(
     r'(אופניים תקולים</span>.*?<div class="kpi-value num">)[^<]*(</div>.*?<div class="kpi-sub num">)[^<]*(</div>)',
     lambda m: m.group(1) + f'{disabled_pct}%' + m.group(2) + f'{total_fleet:,} / {total_disabled:,} אופניים' + m.group(3),
+    html, count=1, flags=re.DOTALL
+)
+# 6b. אופניים תקולים — delta (more disabled = bad)
+disabled_delta_cls = 'good' if disabled_delta <= 0 else 'bad'
+disabled_delta_arrow = '▼' if disabled_delta < 0 else ('▲' if disabled_delta > 0 else '–')
+disabled_delta_val = f'{abs(disabled_delta)}%' if disabled_delta != 0 else 'ללא שינוי'
+disabled_delta_html = (
+    f'<div class="kpi-delta {disabled_delta_cls}">'
+    f'<span class="arrow">{disabled_delta_arrow}</span>'
+    f'<span class="value num">{disabled_delta_val}</span>'
+    f'<span class="ctx">לעומת שבוע שעבר באותה שעה</span></div>'
+) if wow_fleet > 0 else ''
+html = re.sub(
+    r'(אופניים תקולים</span>.*?kpi-sub num.*?</div>)\s*<div class="kpi-delta[^"]*">.*?</div>',
+    lambda m: m.group(1) + '\n      ' + disabled_delta_html,
     html, count=1, flags=re.DOTALL
 )
 
