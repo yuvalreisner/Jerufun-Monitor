@@ -130,10 +130,11 @@ hourly_sta_raw = db.get_hourly_timeseries_all(hours=72)
 hourly_stations = {}
 for _sname, _rows in hourly_sta_raw.items():
     hourly_stations[_sname] = {
-        'labels':    [r['hour'][11:13] for r in _rows],
+        'labels':    [r['hour'][11:13] + ':00' for r in _rows],
         'datetimes': [_dt_label(r['hour']) for r in _rows],
         'a': [round(float(r['reg']), 1) for r in _rows],
-        'b': [round(float(r['elec']), 1) for r in _rows]
+        'b': [round(float(r['elec']), 1) for r in _rows],
+        'c': [round(float(r['dis']), 1) for r in _rows],
     }
 
 # Shabbat times from Hebcal API
