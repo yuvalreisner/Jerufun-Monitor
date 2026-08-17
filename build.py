@@ -174,12 +174,17 @@ if not _rides_30d.empty:
     # number of distinct dates each hour-of-day appears → true average
     _days_per_hod = _rides_30d.groupby('hour_of_day')['hour'].count()
     _avg_by_hod = (_by_hod / _days_per_hod).round(1)
-    _peak_hod = int(_avg_by_hod.idxmax())
-    _peak_avg = float(_avg_by_hod.max())
+    _top2 = _avg_by_hod.nlargest(2)
+    _peak_hod  = int(_top2.index[0])
+    _peak_avg  = float(_top2.iloc[0])
+    _peak2_hod = int(_top2.index[1]) if len(_top2) > 1 else (_peak_hod + 1) % 24
+    _peak2_avg = float(_top2.iloc[1]) if len(_top2) > 1 else 0.0
 else:
-    _peak_hod, _peak_avg = 8, 0.0
-peak_hour_str  = f'{_peak_hod:02d}:00'
-peak_hour_avg  = round(_peak_avg, 1)
+    _peak_hod, _peak_avg, _peak2_hod, _peak2_avg = 8, 0.0, 17, 0.0
+peak_hour_str   = f'{_peak_hod:02d}:00'
+peak_hour_avg   = round(_peak_avg, 1)
+peak_hour2_str  = f'{_peak2_hod:02d}:00'
+peak_hour2_avg  = round(_peak2_avg, 1)
 rhr_labels    = [h[11:13] + ':00' for h in hourly_rides_df['hour']]
 rhr_datetimes = [_dt_label(h) for h in hourly_rides_df['hour']]
 rhr_a = [int(v) for v in hourly_rides_df['reg']]
@@ -410,7 +415,8 @@ chronic_grid_html = '\n'.join(chronic_cards) if chronic_cards else '<p style="co
 
 
 # ── Insights helper (cards built later after malf_a/weekly_rides_df) ─────────
-def _insight_card(icon, label, value, detail):
+def _insight_card(icon, label, value, detail, formula=None):
+    _formula_html = f'<span class="insight-formula">{formula}</span>' if formula else ''
     return (
         f'<div class="insight-card">'
         f'<span class="insight-icon">{icon}</span>'
@@ -418,6 +424,7 @@ def _insight_card(icon, label, value, detail):
         f'<span class="insight-label">{label}</span>'
         f'<span class="insight-value">{value}</span>'
         f'<span class="insight-detail">{detail}</span>'
+        f'{_formula_html}'
         f'</div></div>'
     )
 
@@ -544,22 +551,22 @@ _dis_snap = snap[snap['bikes_disabled'] > 0].sort_values('bikes_disabled', ascen
 if not _dis_snap.empty:
     _i1_name  = _dis_snap.iloc[0]['station_name']
     _i1_count = int(_dis_snap.iloc[0]['bikes_disabled'])
-    _i1 = _insight_card('🔧', 'תחנה עם הכי הרבה תקולים', _i1_name, f'{_i1_count} אופניים תקולים כרגע')
+    _i1 = _insight_card('🔧', 'התחנה עם הכי הרבה אופניים תקולים', _i1_name, f'{_i1_count} אופניים תקולים כרגע')
 else:
-    _i1 = _insight_card('🔧', 'תחנה עם הכי הרבה תקולים', '—', 'אין אופניים תקולים')
+    _i1 = _insight_card('🔧', 'התחנה עם הכי הרבה אופניים תקולים', '—', 'אין אופניים תקולים')
 
 # Insight 2: station with most rides this week
 if not weekly_rides_df.empty:
     _top = weekly_rides_df.sort_values('weekly_total', ascending=False).iloc[0]
-    _i2 = _insight_card('🏆', 'הכי הרבה נסיעות השבוע', _top['station_name'], f'{int(_top["weekly_total"])} נסיעות ב-7 ימים')
+    _i2 = _insight_card('🏆', 'התחנה עם הכי הרבה נסיעות השבוע', _top['station_name'], f'{int(_top["weekly_total"]):,} נסיעות ב-7 הימים האחרונים')
 else:
-    _i2 = _insight_card('🏆', 'הכי הרבה נסיעות השבוע', '—', 'אין נתונים')
+    _i2 = _insight_card('🏆', 'התחנה עם הכי הרבה נסיעות השבוע', '—', 'אין נתונים')
 
 # Insight 3: allocation efficiency (over-allocated → under-allocated)
 _eff = weekly_rides_df.merge(snap[['station_name','bikes_available']], on='station_name', how='inner')
 _eff = _eff[_eff['bikes_available'] >= 3].copy()
 _eff['efficiency'] = _eff['weekly_total'] / _eff['bikes_available'].clip(lower=1)
-_over  = _eff[_eff['bikes_available'] >= 5].sort_values('efficiency').head(1)
+_over  = _eff[_eff['bikes_available'] >= 5].sort_values(['efficiency','bikes_available'], ascending=[True,False]).head(1)
 _under = _eff[_eff['weekly_total'] >= 5].sort_values('efficiency', ascending=False).head(1)
 if not _over.empty and not _under.empty and _over.iloc[0]['station_name'] != _under.iloc[0]['station_name']:
     _ov_name = _over.iloc[0]['station_name']
@@ -570,7 +577,24 @@ if not _over.empty and not _under.empty and _over.iloc[0]['station_name'] != _un
     _un_rides = int(_under.iloc[0]['weekly_total'])
     _i3_val    = f'{_ov_name} ← → {_un_name}'
     _i3_detail = f'עודף: {_ov_bikes} אופניים / {_ov_rides} נסיעות · מחסור: {_un_bikes} אופניים / {_un_rides} נסיעות'
-    _i3 = _insight_card('🔄', 'המלצת שינוע אופניים', f'מ: {_ov_name}', f'ל: {_un_name} · {_ov_bikes}→{_un_bikes} אופניים')
+    _i3_tip = (
+        'ציון יעילות תחנה:\n'
+        '    נסיעות שבועיות\n'
+        '   ─────────────────\n'
+        '   אופניים זמינים\n\n'
+        'תחנה עם ציון נמוך = אופניים רבים ומעט נסיעות → עודף הקצאה (שולחת).\n'
+        'תחנה עם ציון גבוה = אופניים מעטים ונסיעות רבות → מחסור (מקבלת).'
+    )
+    _i3 = (
+        f'<div class="insight-card">'
+        f'<span class="insight-icon">🔄</span>'
+        f'<div class="insight-body">'
+        f'<span class="insight-label">המלצת שינוע אופניים'
+        f'<i class="info-btn" data-tip="{_i3_tip}">i</i></span>'
+        f'<span class="insight-value">מ: {_ov_name}<br>ל: {_un_name}</span>'
+        f'<span class="insight-detail">{_ov_bikes} אופניים / {_ov_rides} נסיעות  →  {_un_bikes} אופניים / {_un_rides} נסיעות</span>'
+        f'</div></div>'
+    )
 else:
     _i3 = _insight_card('🔄', 'המלצת שינוע אופניים', '—', 'אין מספיק נתונים')
 
@@ -579,14 +603,14 @@ if not weekly_rides_df.empty:
     _total_w = int(weekly_rides_df['weekly_total'].sum())
     _elec_w  = int(weekly_rides_df['weekly_elec'].sum())
     _elec_pct = round(_elec_w / max(_total_w, 1) * 100, 1)
-    _i5 = _insight_card('⚡', 'נסיעות חשמליות השבוע', f'{_elec_pct}%', f'{_elec_w:,} מתוך {_total_w:,} נסיעות')
+    _i5 = _insight_card('⚡', 'אחוז הנסיעות החשמליות השבוע', f'{_elec_pct}%', f'{_elec_w:,} מתוך {_total_w:,} נסיעות')
 else:
-    _i5 = _insight_card('⚡', 'נסיעות חשמליות השבוע', '—', 'אין נתונים')
+    _i5 = _insight_card('⚡', 'אחוז הנסיעות החשמליות השבוע', '—', 'אין נתונים')
 
 # Insight 6: peak hour (already computed)
-_i6 = _insight_card('🕐', 'שעת השיא של הרשת', peak_hour_str, f'ממוצע {peak_hour_avg:g} נסיעות · 30 ימים')
+_i6 = _insight_card('🕐', 'שעות השיא של הרשת', f'{peak_hour_str}  ·  {peak_hour2_str}', f'ממוצע {peak_hour_avg:g} ו-{peak_hour2_avg:g} נסיעות בשעה · 30 ימים אחרונים')
 
-insights_html = _i1 + _i2 + _i3 + _i5 + _i6
+insights_html = _i1 + _i2 + _i6 + _i3 + _i5
 
 # Weekly/monthly aggregations for net charts
 net['date_p'] = pd.to_datetime(net['date'])
