@@ -840,6 +840,18 @@ if _font_faces:
         ''
     )
 
+# 0b. Always update window._jeruGeo and window._jeruShabbat (unconditionally,
+#     independent of font-embedding success — the font block's html.replace() target
+#     may not exist in template.html if fonts were already embedded in a prior build,
+#     causing stale map data while var stations gets updated correctly via regex).
+_geo_js  = 'window._jeruGeo='  + json.dumps(stations_geo, ensure_ascii=False) + ';'
+_shab_js = 'window._jeruShabbat=' + json.dumps(list(_SHAB_SET), ensure_ascii=False) + ';'
+html = re.sub(
+    r'window\._jeruGeo=\[.*?\];window\._jeruShabbat=\[.*?\];',
+    _geo_js + _shab_js,
+    html, count=1, flags=re.DOTALL
+)
+
 # 1. Page title
 # title replace removed — template already has correct title
 
