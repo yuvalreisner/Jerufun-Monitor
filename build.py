@@ -575,24 +575,28 @@ if not _over.empty and not _under.empty and _over.iloc[0]['station_name'] != _un
     _ov_rides = int(_over.iloc[0]['weekly_total'])
     _un_bikes = int(_under.iloc[0]['bikes_available'])
     _un_rides = int(_under.iloc[0]['weekly_total'])
-    _i3_val    = f'{_ov_name} ← → {_un_name}'
-    _i3_detail = f'עודף: {_ov_bikes} אופניים / {_ov_rides} נסיעות · מחסור: {_un_bikes} אופניים / {_un_rides} נסיעות'
-    _i3_tip = (
-        'ציון יעילות תחנה:\n'
-        '    נסיעות שבועיות\n'
-        '   ─────────────────\n'
-        '   אופניים זמינים\n\n'
-        'תחנה עם ציון נמוך = אופניים רבים ומעט נסיעות → עודף הקצאה (שולחת).\n'
-        'תחנה עם ציון גבוה = אופניים מעטים ונסיעות רבות → מחסור (מקבלת).'
+    _i3_popup = (
+        '<div class="alloc-tip-popup">'
+        '<div class="alloc-tip-title">כיצד מחושבת המלצת השינוע?</div>'
+        '<div class="alloc-tip-fraction">'
+        '<span class="alloc-tip-num">נסיעות שבועיות</span>'
+        '<hr class="alloc-tip-hr">'
+        '<span class="alloc-tip-den">ממוצע אופניים זמינים (7 ימים)</span>'
+        '</div>'
+        '<div class="alloc-tip-rules">'
+        '<div>ציון נמוך ⟵ אופניים רבים, נסיעות מעטות ⟵ תחנה שולחת</div>'
+        '<div>ציון גבוה ⟵ אופניים מעטים, נסיעות רבות ⟵ תחנה מקבלת</div>'
+        '</div>'
+        '</div>'
     )
     _i3 = (
         f'<div class="insight-card">'
         f'<span class="insight-icon">🔄</span>'
         f'<div class="insight-body">'
         f'<span class="insight-label">המלצת שינוע אופניים'
-        f'<i class="info-btn" data-tip="{_i3_tip}">i</i></span>'
+        f'<span class="alloc-tip-wrap"><i class="info-btn alloc-tip-trigger">i</i>{_i3_popup}</span></span>'
         f'<span class="insight-value">מ: {_ov_name}<br>ל: {_un_name}</span>'
-        f'<span class="insight-detail">{_ov_bikes} אופניים / {_ov_rides} נסיעות  →  {_un_bikes} אופניים / {_un_rides} נסיעות</span>'
+        f'<span class="insight-detail">{_ov_bikes} אופניים / {_ov_rides} נסיעות  ·  {_un_bikes} אופניים / {_un_rides} נסיעות</span>'
         f'</div></div>'
     )
 else:
