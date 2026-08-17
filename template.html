@@ -355,6 +355,28 @@
   .skyline-labels{ display:flex; gap:6px; margin-top:10px; min-width:520px; }
   .skyline-labels span{ flex:1; text-align:center; font-size:10.5px; color:var(--text-faint); }
 
+  /* ---------- insights ---------- */
+  .insights-section{ padding:0 4px 0; }
+  .insights-grid{ display:flex; flex-wrap:wrap; gap:12px; }
+  .insight-card{
+    flex:1; min-width:200px;
+    background:var(--bg-panel); border:1px solid var(--border-strong);
+    border-radius:14px; padding:16px 20px;
+    display:flex; align-items:center; gap:14px;
+    box-shadow:var(--shadow);
+  }
+  .insight-icon{ font-size:26px; flex-shrink:0; line-height:1; }
+  .insight-body{ display:flex; flex-direction:column; gap:2px; }
+  .insight-label{ font-size:11px; color:var(--text-faint); font-weight:500; }
+  .insight-value{ font-size:20px; font-weight:700; color:var(--text); line-height:1.1; }
+  .insight-detail{ font-size:12px; color:var(--text-dim); }
+  @media (max-width:760px){
+    .insights-section{ padding:0 2px; }
+    .insight-card{ min-width:140px; padding:12px 14px; gap:10px; }
+    .insight-icon{ font-size:22px; }
+    .insight-value{ font-size:17px; }
+  }
+
   /* ---------- table ---------- */
   table.ranking{ width:100%; min-width:480px; border-collapse:collapse; font-size:13px; }
   table.ranking th{ text-align:right; color:var(--text-faint); font-weight:500; font-size:11.5px; padding:0 10px 12px; border-bottom:1px solid var(--border-strong); }
@@ -542,6 +564,7 @@
     </button>
     <div class="nav-dropdown-menu" id="navDropdownMenu" hidden>
       <a href="javascript:void(0)" data-target="kpis">כללי</a>
+      <a href="javascript:void(0)" data-target="insights">תובנות</a>
       <a href="javascript:void(0)" data-target="map-sec">מפה</a>
       <a href="javascript:void(0)" data-target="station-sec">תחנות</a>
       <a href="javascript:void(0)" data-target="rides">נסיעות</a>
@@ -615,6 +638,21 @@
       </div>
     </div>
     <p class="kpi-ctx">↕ השינוי בכל כרטיס הוא ביחס לשבוע שעבר באותה שעה</p>
+  </section>
+
+  <!-- INSIGHTS -->
+  <section id="insights">
+    <div class="section-head">
+      <div>
+        <h3>💡 תובנות</h3>
+        <p class="hint">מידע קריטי לקבלת החלטות · על בסיס 30 ימים אחרונים</p>
+      </div>
+    </div>
+    <div class="panel" style="padding:18px 20px 20px;">
+      <div class="insights-grid" id="insightsGrid">
+        __INSIGHTS_HTML__
+      </div>
+    </div>
   </section>
 
   <!-- MAP -->

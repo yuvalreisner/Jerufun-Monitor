@@ -164,6 +164,22 @@ import datetime as _dt
 _now = _dt.datetime.utcnow()
 _cutoff = (_now - _dt.timedelta(hours=48)).strftime('%Y-%m-%dT%H:00')
 hourly_rides_df = rides_raw[rides_raw['hour'] >= _cutoff].copy().sort_values('hour')
+
+# Peak hour — average rides per hour-of-day over last 30 days
+_peak_cutoff = (_now - _dt.timedelta(days=30)).strftime('%Y-%m-%dT%H:00')
+_rides_30d = rides_raw[rides_raw['hour'] >= _peak_cutoff].copy()
+_rides_30d['hour_of_day'] = _rides_30d['hour'].str[11:13].astype(int)
+if not _rides_30d.empty:
+    _by_hod = _rides_30d.groupby('hour_of_day')['rides'].sum()
+    # number of distinct dates each hour-of-day appears → true average
+    _days_per_hod = _rides_30d.groupby('hour_of_day')['hour'].count()
+    _avg_by_hod = (_by_hod / _days_per_hod).round(1)
+    _peak_hod = int(_avg_by_hod.idxmax())
+    _peak_avg = float(_avg_by_hod.max())
+else:
+    _peak_hod, _peak_avg = 8, 0.0
+peak_hour_str  = f'{_peak_hod:02d}:00'
+peak_hour_avg  = round(_peak_avg, 1)
 rhr_labels    = [h[11:13] + ':00' for h in hourly_rides_df['hour']]
 rhr_datetimes = [_dt_label(h) for h in hourly_rides_df['hour']]
 rhr_a = [int(v) for v in hourly_rides_df['reg']]
@@ -392,6 +408,21 @@ for _, row in chronic.iterrows():
     )
 chronic_grid_html = '\n'.join(chronic_cards) if chronic_cards else '<p style="color:var(--text-faint);font-size:13px;">אין תחנות כרוניות ריקות 🎉</p>'
 
+
+# ── Insights section ────────────────────────────────────────────────────────
+def _insight_card(icon, label, value, detail):
+    return (
+        f'<div class="insight-card">'
+        f'<span class="insight-icon">{icon}</span>'
+        f'<div class="insight-body">'
+        f'<span class="insight-label">{label}</span>'
+        f'<span class="insight-value">{value}</span>'
+        f'<span class="insight-detail">{detail}</span>'
+        f'</div></div>'
+    )
+
+_peak_detail = f'ממוצע {peak_hour_avg:g} נסיעות · 30 ימים אחרונים'
+insights_html = _insight_card('🕐', 'שעת השיא של הרשת', peak_hour_str, _peak_detail)
 
 # ── Distribution histogram ────────────────────────────────────────────────────
 _HIST_BINS = [
@@ -909,6 +940,9 @@ html = re.sub(
     f'<div class="hist" id="histBars">\n{hist_html}\n</div>',
     html, count=1, flags=re.DOTALL
 )
+
+# 13.5 Insights section injection
+html = html.replace('__INSIGHTS_HTML__', insights_html)
 
 # 14. Slider tooltip injection
 html = re.sub(
