@@ -287,7 +287,7 @@
   .map-legend .sw{ width:9px; height:9px; border-radius:50%; }
 
   .inline-search{ position:relative; margin-bottom:16px; width:250px; max-width:100%; }
-  .map-search{ width:100%; max-width:400px; }
+  .map-search{ width:100%; max-width:none; }
   .search-box{
     display:flex; align-items:center; gap:8px;
     background:color-mix(in srgb, var(--bg-panel) 92%, transparent); backdrop-filter:blur(8px);
@@ -536,7 +536,7 @@
     #map-el{ height:320px; }
     .panel{ padding:14px; }
     .inline-search{ width:100%; max-width:none; }
-    .map-search{ max-width:none; }
+
     .segmented button{ font-size:12px; padding:6px 10px; }
     .filter-row{ gap:8px; margin-bottom:12px; }
     .info-btn::after{
@@ -696,16 +696,16 @@
         <h3><span class="num-tag">01</span> 🗺️ מפת תחנות<i class="info-btn" data-tip="תצוגה חיה של כלל תחנות הרשת. צבע הנקודה משקף את מצב התחנה; לחיצה על תחנה פותחת את הגרף בסעיף הבא.">i</i></h3>
       </div>
     </div>
+    <div class="inline-search map-search" id="mapSearch">
+      <div class="search-box">
+        <span class="icon">🔍</span>
+        <input type="text" id="stationSearchInput" placeholder="חיפוש תחנה…" autocomplete="off">
+        <button type="button" class="clear-btn" id="stationSearchClear" aria-label="נקה חיפוש" hidden>✕</button>
+      </div>
+      <div class="search-dropdown" id="stationDropdown" hidden></div>
+    </div>
     <div class="map-grid">
       <div class="map-wrap">
-        <div class="inline-search map-search" id="mapSearch">
-          <div class="search-box">
-            <span class="icon">🔍</span>
-            <input type="text" id="stationSearchInput" placeholder="חיפוש תחנה…" autocomplete="off">
-            <button type="button" class="clear-btn" id="stationSearchClear" aria-label="נקה חיפוש" hidden>✕</button>
-          </div>
-          <div class="search-dropdown" id="stationDropdown" hidden></div>
-        </div>
         <div id="map-el"><p style="padding:20px;color:var(--text-faint);font-size:13px;">טוען מפה...</p></div>
         <div class="map-legend">
           <div class="item"><span class="sw" style="background:var(--teal);"></span> זמינה</div>
