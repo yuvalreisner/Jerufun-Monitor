@@ -594,9 +594,9 @@ if not _over.empty and not _under.empty and _over.iloc[0]['station_name'] != _un
         f'<span class="insight-icon">🔄</span>'
         f'<div class="insight-body">'
         f'<span class="insight-label">המלצת שינוע אופניים'
-        f'<span class="alloc-tip-wrap"><i class="info-btn alloc-tip-trigger">i</i>{_i3_popup}</span></span>'
+        f'<span class="alloc-tip-wrap"><i class="alloc-tip-trigger">i</i>{_i3_popup}</span></span>'
         f'<span class="insight-value">מ: {_ov_name}<br>ל: {_un_name}</span>'
-        f'<span class="insight-detail">{_un_bikes} אופניים / {_un_rides} נסיעות  ·  {_ov_bikes} אופניים / {_ov_rides} נסיעות</span>'
+        f'<span class="insight-detail">{_un_rides} נסיעות / {_un_bikes} אופניים  ·  {_ov_rides} נסיעות / {_ov_bikes} אופניים</span>'
         f'</div></div>'
     )
 else:
