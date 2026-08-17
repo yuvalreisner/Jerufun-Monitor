@@ -394,22 +394,34 @@ chronic_grid_html = '\n'.join(chronic_cards) if chronic_cards else '<p style="co
 
 
 # ── Distribution histogram ────────────────────────────────────────────────────
-buckets = [
-    ('0', snap['bikes_available'] == 0),
-    ('1-2', (snap['bikes_available'] >= 1) & (snap['bikes_available'] <= 2)),
-    ('3-4', (snap['bikes_available'] >= 3) & (snap['bikes_available'] <= 4)),
-    ('5-6', (snap['bikes_available'] >= 5) & (snap['bikes_available'] <= 6)),
-    ('7-8', (snap['bikes_available'] >= 7) & (snap['bikes_available'] <= 8)),
-    ('9-10',(snap['bikes_available'] >= 9) & (snap['bikes_available'] <= 10)),
-    ('11+', snap['bikes_available'] >= 11),
+_HIST_BINS = [
+    ('0',   lambda col: col == 0),
+    ('1-2', lambda col: (col >= 1) & (col <= 2)),
+    ('3-4', lambda col: (col >= 3) & (col <= 4)),
+    ('5-6', lambda col: (col >= 5) & (col <= 6)),
+    ('7-8', lambda col: (col >= 7) & (col <= 8)),
+    ('9-10',lambda col: (col >= 9) & (col <= 10)),
+    ('11+', lambda col: col >= 11),
 ]
-counts = [(lbl, int(mask.sum())) for lbl, mask in buckets]
-max_count = max(1, max(c for _, c in counts))
+_HIST_COLS = {
+    'all':      snap['bikes_available'],
+    'electric': snap['bikes_electric'],
+    'regular':  snap['bikes_regular'],
+}
 total_st = len(snap)
+histogram_data = {}
+for _htype, _col in _HIST_COLS.items():
+    _counts = [int(fn(_col).sum()) for _, fn in _HIST_BINS]
+    _labels = [lbl for lbl, _ in _HIST_BINS]
+    _max    = max(1, max(_counts))
+    histogram_data[_htype] = {'labels': _labels, 'counts': _counts, 'max': _max, 'total': total_st}
 
-hist_bars = []
+# Static HTML bars (הכל) for initial render
+counts     = list(zip([l for l, _ in _HIST_BINS], histogram_data['all']['counts']))
+max_count  = histogram_data['all']['max']
+hist_bars  = []
 for lbl, cnt in counts:
-    h_pct = round(cnt / max_count * 100, 1)
+    h_pct  = round(cnt / max_count * 100, 1)
     pct_st = round(cnt / total_st * 100, 1)
     hist_bars.append(
         f'<div class="bar bar-hover" style="height:{h_pct}%;" '
@@ -636,6 +648,7 @@ data_obj = {
     'hourly_stations':   hourly_stations,
     'rides_by_station':  rides_by_station,
     'station_names':     sorted(daily_stations.keys()),
+    'histogram':         histogram_data,
 }
 data_js = 'window.DATA = ' + json.dumps(data_obj, ensure_ascii=False) + ';'
 
