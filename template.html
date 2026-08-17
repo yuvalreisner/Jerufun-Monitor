@@ -376,6 +376,34 @@
     .insight-value{ font-size:14px; }
   }
 
+  /* ---------- alloc html-tooltip ---------- */
+  .alloc-tip-wrap{
+    position:relative; display:inline-block;
+    vertical-align:middle; margin-inline-start:6px;
+  }
+  .alloc-tip-popup{
+    display:none; position:absolute; bottom:calc(100% + 10px); right:0;
+    width:290px; background:var(--bg-panel); border:1px solid var(--border-strong);
+    border-radius:12px; padding:14px 16px 16px;
+    box-shadow:var(--shadow); z-index:300;
+    text-align:right; direction:rtl; font-style:normal; font-weight:400;
+    color:var(--text-dim); white-space:normal;
+  }
+  .alloc-tip-wrap.open .alloc-tip-popup{ display:block; }
+  .alloc-tip-title{ font-size:13px; font-weight:700; color:var(--text); margin-bottom:12px; }
+  .alloc-tip-fraction{
+    display:flex; flex-direction:column; align-items:center;
+    margin:0 auto 14px; font-size:13px; color:var(--text); width:fit-content; min-width:180px;
+  }
+  .alloc-tip-num{ text-align:center; padding-bottom:5px; font-weight:400; }
+  .alloc-tip-hr{ width:100%; height:1px; background:var(--border-strong); margin:0; border:none; }
+  .alloc-tip-den{ text-align:center; padding-top:5px; color:var(--text-dim); }
+  .alloc-tip-rules{ font-size:12px; color:var(--text-dim); line-height:2; }
+  .alloc-tip-rules div::before{ content:''; }
+  @media (max-width:760px){
+    .alloc-tip-popup{ width:min(280px,85vw); right:auto; left:50%; transform:translateX(-50%); }
+  }
+
   /* ---------- table ---------- */
   table.ranking{ width:100%; min-width:480px; border-collapse:collapse; font-size:13px; }
   table.ranking th{ text-align:right; color:var(--text-faint); font-weight:500; font-size:11.5px; padding:0 10px 12px; border-bottom:1px solid var(--border-strong); }
@@ -2243,6 +2271,29 @@
       btn.addEventListener('mouseenter', function(){ _positionTip(this); });
       btn.addEventListener('touchstart', function(){ _positionTip(this); }, {passive:true});
     });
+
+    // Alloc HTML tooltip toggle
+    function _initAllocTips(){
+      document.querySelectorAll('.alloc-tip-trigger').forEach(function(btn){
+        btn.addEventListener('click', function(e){
+          e.stopPropagation();
+          var wrap = btn.closest('.alloc-tip-wrap');
+          var wasOpen = wrap.classList.contains('open');
+          document.querySelectorAll('.alloc-tip-wrap.open').forEach(function(w){ w.classList.remove('open'); });
+          if (!wasOpen) wrap.classList.add('open');
+        });
+        btn.addEventListener('mouseenter', function(){
+          btn.closest('.alloc-tip-wrap').classList.add('open');
+        });
+      });
+      document.querySelectorAll('.alloc-tip-wrap').forEach(function(wrap){
+        wrap.addEventListener('mouseleave', function(){ wrap.classList.remove('open'); });
+      });
+      document.addEventListener('click', function(){
+        document.querySelectorAll('.alloc-tip-wrap.open').forEach(function(w){ w.classList.remove('open'); });
+      });
+    }
+    _initAllocTips();
   })();
 
 </script>
