@@ -181,7 +181,7 @@
     border:1px solid color-mix(in srgb, var(--teal) 45%, transparent);
     padding:6px 12px; border-radius:999px; margin-bottom:10px;
   }
-  .hero-note{ color:var(--text-dim); font-size:15px; max-width:520px; line-height:1.7; margin:8px 0 0; }
+  .hero-note{ color:var(--text-dim); font-size:15px; max-width:none; white-space:nowrap; line-height:1.7; margin:8px 0 0; }
   .kpi-ctx{ color:var(--text-dim); font-size:13px; text-align:right; margin-top:14px; }
 
   .kpi-grid{
@@ -247,7 +247,7 @@
     font-family:'Heebo', Arial, sans-serif; font-size:14px; color:var(--gold);
     border:1px solid var(--border-strong); border-radius:8px; padding:2px 9px;
   }
-  .section-head p.hint{ font-size:12.5px; color:var(--text-dim); max-width:640px; line-height:1.7; margin:0; }
+  .section-head p.hint{ font-size:15px; color:var(--text-dim); max-width:640px; line-height:1.7; margin:0; }
 
   .panel{
     background:var(--bg-panel); border:1px solid var(--border); border-radius:18px;
@@ -528,7 +528,7 @@
     .nav-dropdown-btn{ font-size:11px; padding:7px 10px; }
     .hero-top{ margin-bottom:12px; }
     .hero-top h2{ font-size:20px; }
-    .hero-note{ font-size:12px; margin-top:4px; }
+    .hero-note{ font-size:12px; margin-top:4px; white-space:normal; max-width:100%; }
     .kpi-ctx{ font-size:11px; }
     .section-head{ flex-direction:column; align-items:flex-start; gap:10px; margin-bottom:14px; }
     .section-head h3{ font-size:22px; }
