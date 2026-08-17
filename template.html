@@ -1240,6 +1240,7 @@
           clearBtn.hidden = false;
           closeDropdown();
           if (opts.onSelect) opts.onSelect(s);
+          document.dispatchEvent(new CustomEvent('_jeruStationPicked', {detail:{name:s.name, src:opts.inputId}}));
         });
         dropdown.appendChild(opt);
       });
@@ -1269,11 +1270,22 @@
     document.addEventListener('click', function(e){
       if (!wrap.contains(e.target)) closeDropdown();
     });
+    return {
+      inputId: opts.inputId,
+      selectByName: function(name){
+        var list = opts.getStations ? opts.getStations('') : stations;
+        var found = null;
+        for(var k=0;k<list.length;k++){ if(list[k].name===name){found=list[k];break;} }
+        input.value = name;
+        clearBtn.hidden = (name.length === 0);
+        if(found && opts.onSelect) opts.onSelect(found);
+      }
+    };
   }
 
   function clearMapHighlights(){ /* Google Maps handles highlighting via markers */ }
 
-  setupStationSearch({
+  var _ss_map = setupStationSearch({
     inputId:'stationSearchInput', dropdownId:'stationDropdown',
     clearBtnId:'stationSearchClear', wrapId:'mapSearch',
     onSelect:function(s){
@@ -1286,7 +1298,7 @@
     }
   });
 
-  setupStationSearch({
+  var _ss_chart = setupStationSearch({
     inputId:'stationChartSearchInput', dropdownId:'stationChartDropdown',
     clearBtnId:'stationChartSearchClear', wrapId:'stationChartSearch',
     onSelect:function(s){
@@ -1335,7 +1347,7 @@
       return Math.round(s / 7 * 10) / 10;
     }
 
-    setupStationSearch({
+    window._ss_rides = setupStationSearch({
       inputId:   'ridesStationInput',
       dropdownId:'ridesStationDropdown',
       clearBtnId:'ridesStationClear',
@@ -1369,6 +1381,42 @@
         var n = slider ? parseInt(slider.value,10) : 14;
         if (window._jeruSlice) window._jeruSlice('rides', period, n);
       }
+    });
+  })();
+
+  // ---- sync station search across all charts ----
+  (function(){
+    var _syncing = false;
+    var _inputs = [
+      {id:'stationSearchInput',      clearId:'stationSearchClear'},
+      {id:'stationChartSearchInput', clearId:'stationChartSearchClear'},
+      {id:'ridesStationInput',       clearId:'ridesStationClear'}
+    ];
+    _inputs.forEach(function(cfg, i){
+      var inp = document.getElementById(cfg.id);
+      if(!inp) return;
+      inp.addEventListener('input', function(){
+        if(_syncing) return;
+        _syncing = true;
+        var val = inp.value;
+        _inputs.forEach(function(other, j){
+          if(j === i) return;
+          var o = document.getElementById(other.id);
+          var c = document.getElementById(other.clearId);
+          if(o) o.value = val;
+          if(c) c.hidden = val.length === 0;
+        });
+        _syncing = false;
+      });
+    });
+    document.addEventListener('_jeruStationPicked', function(e){
+      if(_syncing) return;
+      _syncing = true;
+      var name = e.detail.name, src = e.detail.src;
+      [_ss_map, _ss_chart, window._ss_rides].forEach(function(handle){
+        if(handle && handle.inputId !== src) handle.selectByName(name);
+      });
+      _syncing = false;
     });
   })();
 
