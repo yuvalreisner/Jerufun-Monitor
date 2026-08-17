@@ -364,6 +364,7 @@
   table.ranking th .sort-arrow{ font-size:10px; margin-right:3px; opacity:0.6; }
   table.ranking.sticky-head th{ position:sticky; top:0; background:var(--bg-panel); padding-top:8px; z-index:2; }
   table.ranking td{ padding:12px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  table.ranking td:nth-child(2), table.ranking td:nth-child(3){ width:36%; }
   table.ranking tr:last-child td{ border-bottom:0; }
   .station-name{ font-weight:600; }
   .bar-cell{ display:flex; align-items:center; gap:10px; min-width:150px; }
@@ -483,8 +484,8 @@
     .segmented button{ font-size:12px; padding:6px 10px; }
     .filter-row{ gap:8px; margin-bottom:12px; }
     .info-btn::after{
-      left:var(--tip-left,auto) !important;
-      inset-inline-end:var(--tip-ie,0) !important;
+      inset-inline-end:auto !important;
+      left:var(--tip-left,0) !important;
       transform:none !important;
       width:min(270px, 85vw); max-width:min(270px, 85vw);
     }
