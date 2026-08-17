@@ -574,20 +574,6 @@ if not _over.empty and not _under.empty and _over.iloc[0]['station_name'] != _un
 else:
     _i3 = _insight_card('🔄', 'המלצת שינוע אופניים', '—', 'אין מספיק נתונים')
 
-# Insight 4: malfunction trend vs 30 days ago
-if len(malf_a) >= 2 and len(net_dates) >= 2:
-    _30d_ago_str = (_now - _dt.timedelta(days=30)).strftime('%Y-%m-%d')
-    _net_dates_arr = net_dates
-    _closest_idx = min(range(len(_net_dates_arr)), key=lambda i: abs((pd.Timestamp(_net_dates_arr[i]) - pd.Timestamp(_30d_ago_str)).days))
-    _malf_now = malf_a[-1]
-    _malf_30d = malf_a[_closest_idx]
-    _delta = round(_malf_now - _malf_30d, 1)
-    _arrow = '↑' if _delta > 0 else '↓' if _delta < 0 else '→'
-    _color_hint = ' (עלייה)' if _delta > 0 else ' (ירידה)' if _delta < 0 else ''
-    _i4 = _insight_card('📉', 'תקולים ביחס לחודש שעבר', f'{_arrow} {abs(_delta)}%', f'היום: {_malf_now}% · לפני 30 יום: {_malf_30d}%{_color_hint}')
-else:
-    _i4 = _insight_card('📉', 'תקולים ביחס לחודש שעבר', '—', 'אין מספיק היסטוריה')
-
 # Insight 5: electric share of weekly rides
 if not weekly_rides_df.empty:
     _total_w = int(weekly_rides_df['weekly_total'].sum())
@@ -600,7 +586,7 @@ else:
 # Insight 6: peak hour (already computed)
 _i6 = _insight_card('🕐', 'שעת השיא של הרשת', peak_hour_str, f'ממוצע {peak_hour_avg:g} נסיעות · 30 ימים')
 
-insights_html = _i1 + _i2 + _i3 + _i4 + _i5 + _i6
+insights_html = _i1 + _i2 + _i3 + _i5 + _i6
 
 # Weekly/monthly aggregations for net charts
 net['date_p'] = pd.to_datetime(net['date'])
