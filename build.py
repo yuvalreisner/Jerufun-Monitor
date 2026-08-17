@@ -660,7 +660,8 @@ st_df = pd.read_sql_query("""
 all_st_df = pd.read_sql_query(f"""
     SELECT station_name, DATE(ts) AS date,
            ROUND(AVG(bikes_regular), 1)  AS reg,
-           ROUND(AVG(bikes_electric), 1) AS elec
+           ROUND(AVG(bikes_electric), 1) AS elec,
+           ROUND(AVG(bikes_disabled), 1) AS dis
     FROM snapshots
     WHERE station_name NOT IN ({_BL_SQL})
     GROUP BY station_name, DATE(ts)
@@ -678,6 +679,7 @@ for sname, grp in all_st_df.groupby('station_name'):
         'sunday': suns,
         'a': [round(float(v), 1) for v in grp['reg']],
         'b': [round(float(v), 1) for v in grp['elec']],
+        'c': [round(float(v), 1) for v in grp['dis']],
     }
 
 st_dates  = list(st_df['date'])
