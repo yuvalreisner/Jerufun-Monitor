@@ -286,8 +286,8 @@
   .map-legend .item{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-dim); }
   .map-legend .sw{ width:9px; height:9px; border-radius:50%; }
 
-  .map-search{ width:100%; max-width:400px; }
   .inline-search{ position:relative; margin-bottom:16px; width:250px; max-width:100%; }
+  .map-search{ width:100%; max-width:400px; }
   .search-box{
     display:flex; align-items:center; gap:8px;
     background:color-mix(in srgb, var(--bg-panel) 92%, transparent); backdrop-filter:blur(8px);
@@ -698,7 +698,7 @@
     </div>
     <div class="map-grid">
       <div class="map-wrap">
-        <div class="map-search" id="mapSearch" style="margin-bottom:10px;">
+        <div class="inline-search map-search" id="mapSearch">
           <div class="search-box">
             <span class="icon">🔍</span>
             <input type="text" id="stationSearchInput" placeholder="חיפוש תחנה…" autocomplete="off">
