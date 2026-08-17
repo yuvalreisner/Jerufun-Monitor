@@ -164,7 +164,7 @@ import datetime as _dt
 _now = _dt.datetime.utcnow()
 _cutoff = (_now - _dt.timedelta(hours=48)).strftime('%Y-%m-%dT%H:00')
 hourly_rides_df = rides_raw[rides_raw['hour'] >= _cutoff].copy().sort_values('hour')
-rhr_labels    = [h[11:13]     for h in hourly_rides_df['hour']]
+rhr_labels    = [h[11:13] + ':00' for h in hourly_rides_df['hour']]
 rhr_datetimes = [_dt_label(h) for h in hourly_rides_df['hour']]
 rhr_a = [int(v) for v in hourly_rides_df['reg']]
 rhr_b = [int(v) for v in hourly_rides_df['elec']]
@@ -441,7 +441,7 @@ else:
     hr_labels = []; hr_a = []; hr_b = []; hr_avail = []
 
 # Reassign to ensure consistency after hourly_snap block
-rhr_labels    = [h[11:13]     for h in hourly_rides_df['hour']]
+rhr_labels    = [h[11:13] + ':00' for h in hourly_rides_df['hour']]
 rhr_datetimes = [_dt_label(h) for h in hourly_rides_df['hour']]
 # legacy today variable still needed below
 today = daily_rides['date'].max() if not daily_rides.empty else ''
@@ -566,7 +566,7 @@ for _sname, _grp in _st_rides_df.groupby('station_name'):
             'b': [int(v) for v in _daily['elec']]
         },
         'hourly': {
-            'labels':    [h[11:13]     for h in _hourly['hour']],
+            'labels':    [h[11:13] + ':00' for h in _hourly['hour']],
             'datetimes': [_dt_label(h) for h in _hourly['hour']],
             'a': [int(v) for v in _hourly['reg']],
             'b': [int(v) for v in _hourly['elec']]
