@@ -434,7 +434,7 @@
     .skyline{ gap:2px; min-width:0; }
     .skyline-labels{ gap:2px; min-width:0; }
     .skyline .col{ min-width:0; flex-shrink:1; }
-    .skyline-labels span{ min-width:0; flex-shrink:1; overflow:hidden; font-size:8px; }
+    .skyline-labels span{ min-width:0; flex-shrink:1; overflow:visible; font-size:8px; }
     .skyline .bar-value{ font-size:8px; }
     .skyline-scroll{ overflow-x:hidden; }
     .area-chart{ height:auto; }
@@ -483,8 +483,9 @@
     .segmented button{ font-size:12px; padding:6px 10px; }
     .filter-row{ gap:8px; margin-bottom:12px; }
     .info-btn::after{
-      left:50% !important; transform:translateX(-50%) !important;
-      inset-inline-end:auto !important;
+      left:var(--tip-left,auto) !important;
+      inset-inline-end:var(--tip-ie,0) !important;
+      transform:none !important;
       width:min(270px, 85vw); max-width:min(270px, 85vw);
     }
   }
@@ -2185,6 +2186,26 @@
     // sliders apply their initial slice now that _jeruSlice is ready
     document.querySelectorAll('.sf-range').forEach(function(el){
       el.dispatchEvent(new Event('input'));
+    });
+
+    // Viewport-aware tooltip positioning (mobile)
+    function _positionTip(btn) {
+      var vw = window.innerWidth;
+      if (vw > 760) {
+        btn.style.removeProperty('--tip-left');
+        btn.style.removeProperty('--tip-ie');
+        return;
+      }
+      var rect = btn.getBoundingClientRect();
+      var tipW = Math.min(270, Math.round(vw * 0.85));
+      var idealLeft = (vw - tipW) / 2;
+      var clamped = Math.max(8, Math.min(idealLeft, vw - tipW - 8));
+      btn.style.setProperty('--tip-left', Math.round(clamped - rect.left) + 'px');
+      btn.style.setProperty('--tip-ie', 'auto');
+    }
+    document.querySelectorAll('.info-btn').forEach(function(btn){
+      btn.addEventListener('mouseenter', function(){ _positionTip(this); });
+      btn.addEventListener('touchstart', function(){ _positionTip(this); }, {passive:true});
     });
   })();
 
