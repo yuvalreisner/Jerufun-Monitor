@@ -435,7 +435,7 @@
     .skyline-labels{ gap:2px; min-width:0; }
     .skyline .col{ min-width:0; flex-shrink:1; }
     .skyline-labels span{ min-width:0; flex-shrink:1; overflow:hidden; font-size:8px; }
-    .skyline .bar-value{ display:none; }
+    .skyline .bar-value{ font-size:8px; }
     .skyline-scroll{ overflow-x:hidden; }
     .area-chart{ height:auto; }
     .area-chart text{ font-size:14px; }
@@ -1942,6 +1942,7 @@
       var n = labels.length;
       var totals = a.map(function(v,i){ return Math.round(v) + Math.round(b[i]) + (c ? Math.round(c[i]||0) : 0); });
       var maxT = Math.max.apply(null, totals);
+      var valStep = n <= 12 ? 1 : n <= 24 ? 2 : n <= 48 ? 4 : 6;
       var html = '';
       for (var i = 0; i < n; i++){
         var total = totals[i];
@@ -1950,11 +1951,12 @@
         var elecPct = total ? Math.round((Math.round(b[i]) / total) * 10000) / 100 : 0;
         var disPct  = (c && total) ? Math.round((Math.round(c[i]||0) / total) * 10000) / 100 : 0;
         var isSun = sunday.indexOf(i) !== -1;
+        var showVal = (i % valStep === 0) || (i === n - 1) || isSun;
         var dateLabel = (datetimes ? datetimes[i] : labels[i]) + (isSun ? ' · א׳' : '');
         var disAttr = c ? ' data-disabled="' + fmt(c[i]||0, 0) + '" data-total-label="סה״כ אופניים"' : '';
         var disSeg  = c ? '<div class="seg disabled" style="height:' + disPct + '%;"></div>' : '';
         html += '<div class="col bar-hover" style="height:' + h + '%;" data-date="' + dateLabel + '" data-regular="' + fmt(a[i],0) + '" data-electric="' + fmt(b[i],0) + '" data-total="' + fmt(total,0) + '"' + disAttr + '>' +
-          '<span class="bar-value">' + fmt(total,0) + '</span>' +
+          '<span class="bar-value"' + (showVal ? '' : ' style="display:none"') + '>' + fmt(total,0) + '</span>' +
           '<div class="bar-fill"><div class="seg regular" style="height:' + regPct + '%;"></div><div class="seg electric" style="height:' + elecPct + '%;"></div>' + disSeg + '</div></div>';
       }
       if (sunday.length){
