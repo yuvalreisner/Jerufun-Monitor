@@ -625,11 +625,18 @@ net['date_p'] = pd.to_datetime(net['date'])
 net['week_p']  = net['date_p'].dt.to_period('W-SAT')
 net['month_p'] = net['date_p'].dt.to_period('M')
 
+# Build per-period fleet lookups for accurate disabled %
+_fleet_s = pd.Series(_fleet_by_date)
+_fleet_s.index = pd.to_datetime(_fleet_s.index)
+_fleet_by_week  = _fleet_s.groupby(_fleet_s.index.to_period('W-SAT')).mean()
+_fleet_by_month = _fleet_s.groupby(_fleet_s.index.to_period('M')).mean()
+
 net_weekly  = net.groupby('week_p')[['avg_available','median_available','total_disabled','empty_stations','no_electric_stations']].mean().reset_index().tail(16)
 nw_labels = [f"{p.start_time.date().day}/{p.start_time.date().month}" for p in net_weekly['week_p']]
 avg_w_a  = [round(float(v),2) for v in net_weekly['avg_available']]
 avg_w_b  = [round(float(v),2) for v in net_weekly['median_available']]
-malf_w_a   = [round(float(v) / total_fleet * 100, 1) for v in net_weekly['total_disabled']]
+malf_w_a   = [round(float(v) / max(_fleet_by_week.get(p, total_fleet), 1) * 100, 1)
+              for v, p in zip(net_weekly['total_disabled'], net_weekly['week_p'])]
 malf_w_abs = [round(float(v)) for v in net_weekly['total_disabled']]
 empty_w_a= [round(float(v)/active_stations*100,1) for v in net_weekly['empty_stations']]
 empty_w_b= [round(float(v)/active_stations*100,1) for v in net_weekly['no_electric_stations']]
@@ -638,7 +645,8 @@ net_monthly = net.groupby('month_p')[['avg_available','median_available','total_
 nm_labels = [_MONTHS_HE.get(str(p.month), str(p)) for p in net_monthly['month_p']]
 avg_m_a  = [round(float(v),2) for v in net_monthly['avg_available']]
 avg_m_b  = [round(float(v),2) for v in net_monthly['median_available']]
-malf_m_a   = [round(float(v) / total_fleet * 100, 1) for v in net_monthly['total_disabled']]
+malf_m_a   = [round(float(v) / max(_fleet_by_month.get(p, total_fleet), 1) * 100, 1)
+              for v, p in zip(net_monthly['total_disabled'], net_monthly['month_p'])]
 malf_m_abs = [round(float(v)) for v in net_monthly['total_disabled']]
 empty_m_a= [round(float(v)/active_stations*100,1) for v in net_monthly['empty_stations']]
 empty_m_b= [round(float(v)/active_stations*100,1) for v in net_monthly['no_electric_stations']]
