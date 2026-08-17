@@ -409,7 +409,7 @@ for _, row in chronic.iterrows():
 chronic_grid_html = '\n'.join(chronic_cards) if chronic_cards else '<p style="color:var(--text-faint);font-size:13px;">אין תחנות כרוניות ריקות 🎉</p>'
 
 
-# ── Insights section ────────────────────────────────────────────────────────
+# ── Insights helper (cards built later after malf_a/weekly_rides_df) ─────────
 def _insight_card(icon, label, value, detail):
     return (
         f'<div class="insight-card">'
@@ -420,9 +420,6 @@ def _insight_card(icon, label, value, detail):
         f'<span class="insight-detail">{detail}</span>'
         f'</div></div>'
     )
-
-_peak_detail = f'ממוצע {peak_hour_avg:g} נסיעות · 30 ימים אחרונים'
-insights_html = _insight_card('🕐', 'שעת השיא של הרשת', peak_hour_str, _peak_detail)
 
 # ── Distribution histogram ────────────────────────────────────────────────────
 _HIST_BINS = [
@@ -540,6 +537,70 @@ empty_a = [round(float(v) / _stations_by_date.get(d, active_stations) * 100, 1)
            for v, d in zip(net['empty_stations'], net_dates)]
 empty_b = [round(float(v) / _stations_by_date.get(d, active_stations) * 100, 1)
            for v, d in zip(net['no_electric_stations'], net_dates)]
+
+# ── Build Insights section HTML ─────────────────────────────────────────────
+# Insight 1: station with most disabled bikes right now
+_dis_snap = snap[snap['bikes_disabled'] > 0].sort_values('bikes_disabled', ascending=False)
+if not _dis_snap.empty:
+    _i1_name  = _dis_snap.iloc[0]['station_name']
+    _i1_count = int(_dis_snap.iloc[0]['bikes_disabled'])
+    _i1 = _insight_card('🔧', 'תחנה עם הכי הרבה תקולים', _i1_name, f'{_i1_count} אופניים תקולים כרגע')
+else:
+    _i1 = _insight_card('🔧', 'תחנה עם הכי הרבה תקולים', '—', 'אין אופניים תקולים')
+
+# Insight 2: station with most rides this week
+if not weekly_rides_df.empty:
+    _top = weekly_rides_df.sort_values('weekly_total', ascending=False).iloc[0]
+    _i2 = _insight_card('🏆', 'הכי הרבה נסיעות השבוע', _top['station_name'], f'{int(_top["weekly_total"])} נסיעות ב-7 ימים')
+else:
+    _i2 = _insight_card('🏆', 'הכי הרבה נסיעות השבוע', '—', 'אין נתונים')
+
+# Insight 3: allocation efficiency (over-allocated → under-allocated)
+_eff = weekly_rides_df.merge(snap[['station_name','bikes_available']], on='station_name', how='inner')
+_eff = _eff[_eff['bikes_available'] >= 3].copy()
+_eff['efficiency'] = _eff['weekly_total'] / _eff['bikes_available'].clip(lower=1)
+_over  = _eff[_eff['bikes_available'] >= 5].sort_values('efficiency').head(1)
+_under = _eff[_eff['weekly_total'] >= 5].sort_values('efficiency', ascending=False).head(1)
+if not _over.empty and not _under.empty and _over.iloc[0]['station_name'] != _under.iloc[0]['station_name']:
+    _ov_name = _over.iloc[0]['station_name']
+    _un_name = _under.iloc[0]['station_name']
+    _ov_bikes = int(_over.iloc[0]['bikes_available'])
+    _ov_rides = int(_over.iloc[0]['weekly_total'])
+    _un_bikes = int(_under.iloc[0]['bikes_available'])
+    _un_rides = int(_under.iloc[0]['weekly_total'])
+    _i3_val    = f'{_ov_name} ← → {_un_name}'
+    _i3_detail = f'עודף: {_ov_bikes} אופניים / {_ov_rides} נסיעות · מחסור: {_un_bikes} אופניים / {_un_rides} נסיעות'
+    _i3 = _insight_card('🔄', 'המלצת שינוע אופניים', f'מ: {_ov_name}', f'ל: {_un_name} · {_ov_bikes}→{_un_bikes} אופניים')
+else:
+    _i3 = _insight_card('🔄', 'המלצת שינוע אופניים', '—', 'אין מספיק נתונים')
+
+# Insight 4: malfunction trend vs 30 days ago
+if len(malf_a) >= 2 and len(net_dates) >= 2:
+    _30d_ago_str = (_now - _dt.timedelta(days=30)).strftime('%Y-%m-%d')
+    _net_dates_arr = net_dates
+    _closest_idx = min(range(len(_net_dates_arr)), key=lambda i: abs((pd.Timestamp(_net_dates_arr[i]) - pd.Timestamp(_30d_ago_str)).days))
+    _malf_now = malf_a[-1]
+    _malf_30d = malf_a[_closest_idx]
+    _delta = round(_malf_now - _malf_30d, 1)
+    _arrow = '↑' if _delta > 0 else '↓' if _delta < 0 else '→'
+    _color_hint = ' (עלייה)' if _delta > 0 else ' (ירידה)' if _delta < 0 else ''
+    _i4 = _insight_card('📉', 'תקולים ביחס לחודש שעבר', f'{_arrow} {abs(_delta)}%', f'היום: {_malf_now}% · לפני 30 יום: {_malf_30d}%{_color_hint}')
+else:
+    _i4 = _insight_card('📉', 'תקולים ביחס לחודש שעבר', '—', 'אין מספיק היסטוריה')
+
+# Insight 5: electric share of weekly rides
+if not weekly_rides_df.empty:
+    _total_w = int(weekly_rides_df['weekly_total'].sum())
+    _elec_w  = int(weekly_rides_df['weekly_elec'].sum())
+    _elec_pct = round(_elec_w / max(_total_w, 1) * 100, 1)
+    _i5 = _insight_card('⚡', 'נסיעות חשמליות השבוע', f'{_elec_pct}%', f'{_elec_w:,} מתוך {_total_w:,} נסיעות')
+else:
+    _i5 = _insight_card('⚡', 'נסיעות חשמליות השבוע', '—', 'אין נתונים')
+
+# Insight 6: peak hour (already computed)
+_i6 = _insight_card('🕐', 'שעת השיא של הרשת', peak_hour_str, f'ממוצע {peak_hour_avg:g} נסיעות · 30 ימים')
+
+insights_html = _i1 + _i2 + _i3 + _i4 + _i5 + _i6
 
 # Weekly/monthly aggregations for net charts
 net['date_p'] = pd.to_datetime(net['date'])
