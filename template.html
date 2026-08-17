@@ -1819,6 +1819,8 @@
     function xPositions(n){
       var xs = [];
       var w = 700 - 2 * X_PAD;
+      if (n === 0) return xs;
+      if (n === 1) { xs.push(Math.round((X_PAD + w / 2) * 10) / 10); return xs; }
       for (var i = 0; i < n; i++){
         xs.push(Math.round((X_PAD + (i / (n - 1)) * w) * 10) / 10);
       }

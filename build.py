@@ -220,6 +220,20 @@ weekly_rides_df['weekly_total'] = weekly_rides_df['weekly_elec'] + weekly_rides_
 # Network summary for avg/median chart
 net = get_daily_network_summary()
 
+_conn_norm = sqlite3.connect(DB_PATH)
+_fleet_rows = _conn_norm.execute(f"""
+    SELECT DATE(ts) AS date,
+           SUM(bikes_regular + bikes_electric + bikes_disabled) /
+               NULLIF(COUNT(DISTINCT STRFTIME('%Y-%m-%dT%H:00', ts)), 0) AS fleet,
+           COUNT(DISTINCT station_name) AS stations
+    FROM snapshots
+    WHERE station_name NOT IN ({_BL_SQL})
+    GROUP BY DATE(ts)
+""").fetchall()
+_conn_norm.close()
+_fleet_by_date    = {r[0]: max(float(r[1]), 1) for r in _fleet_rows}
+_stations_by_date = {r[0]: max(int(r[2]), 1)   for r in _fleet_rows}
+
 
 # ── Fetch real coordinates from API ──────────────────────────────────────────
 import requests
@@ -474,12 +488,15 @@ avg_a = [round(float(v), 2) for v in net['avg_available']]
 avg_b = [round(float(v), 2) for v in net['median_available']]
 
 # Malfunction trend — show as % of total fleet (same as original index.html)
-malf_a   = [round(float(v) / total_fleet * 100, 1) for v in net['total_disabled']]
+malf_a   = [round(float(v) / _fleet_by_date.get(d, total_fleet) * 100, 1)
+            for v, d in zip(net['total_disabled'], net_dates)]
 malf_abs = [round(float(v)) for v in net['total_disabled']]
 
 # Empty trend (% stations empty)
-empty_a = [round(float(v) / active_stations * 100, 1) for v in net['empty_stations']]
-empty_b = [round(float(v) / active_stations * 100, 1) for v in net['no_electric_stations']]
+empty_a = [round(float(v) / _stations_by_date.get(d, active_stations) * 100, 1)
+           for v, d in zip(net['empty_stations'], net_dates)]
+empty_b = [round(float(v) / _stations_by_date.get(d, active_stations) * 100, 1)
+           for v, d in zip(net['no_electric_stations'], net_dates)]
 
 # Weekly/monthly aggregations for net charts
 net['date_p'] = pd.to_datetime(net['date'])
@@ -701,8 +718,7 @@ if _font_faces:
     )
 
 # 1. Page title
-html = html.replace('<title>ירופאן — הצעת עיצוב חדשה</title>',
-                    '<title>ירופאן — דשבורד ירושלים (ניסיון עיצוב)</title>')
+# title replace removed — template already has correct title
 
 # 2. Topbar timestamp
 html = re.sub(r'(?:עודכן ב|עדכון אחרון): \d{1,2}:\d{2} \d{1,2}/\d{1,2}',
@@ -876,18 +892,17 @@ html = re.sub(
 
 # 13. Distribution histogram bars
 html = re.sub(
-    r'<div class="hist">.*?</div>(?=\s*<div class="skyline-labels")',
-    f'<div class="hist">\n{hist_html}\n</div>',
+    r'<div class="hist"[^>]*>.*?</div>(?=\s*<div class="skyline-labels")',
+    f'<div class="hist" id="histBars">\n{hist_html}\n</div>',
     html, count=1, flags=re.DOTALL
 )
 
 # 14. Slider tooltip injection
-_slider_tip = (
-    f'שעתי: עד 48 שעות אחרונות · יומי: עד 30 ימים · '
-    f'שבועי: עד 16 שבועות · חודשי: עד 12 חודשים · '
-    f'נתונים זמינים מאז {first_date_disp}'
+html = re.sub(
+    r'(נתונים זמינים מאז )\d+/\d+/\d{4}',
+    lambda m: m.group(1) + first_date_disp,
+    html
 )
-html = html.replace('__SLIDER_TIP__', _slider_tip)
 
 # 15. Replace stations JS array
 html = re.sub(
@@ -970,25 +985,7 @@ except ImportError:
     _MAPS_KEY = os.environ.get('GOOGLE_MAPS_KEY', '')
 html = html.replace('__MAPS_KEY__', _MAPS_KEY)
 
-# ── Malf trend-figure placeholders ────────────────────────────────────────────
-# Use last graph point (daily average) so card matches what the chart shows
-_card_pct = malf_a[-1] if malf_a else disabled_pct
-_card_abs = int(malf_abs[-1]) if malf_abs else total_disabled
-html = html.replace('__MALF_VAL__', f'{_card_abs:,} אופניים תקולים ({_card_pct}%)')
-
-# Delta: compare today's daily average to the daily average 7 days ago
-_today_date = _now.strftime('%Y-%m-%d')
-_wow_date   = (_now - timedelta(days=7)).strftime('%Y-%m-%d')
-if _wow_date in net_dates:
-    _wow_idx      = net_dates.index(_wow_date)
-    _wow_pct      = malf_a[_wow_idx]
-    _malf_delta   = round(_card_pct - _wow_pct, 1)
-else:
-    _malf_delta   = round(disabled_pct - wow_disabled_pct)  # fallback to snapshot comparison
-_delta_cls  = 'up' if _malf_delta > 0 else 'down'
-_delta_sign = '+' if _malf_delta > 0 else '−'
-html = html.replace('__MALF_DELTA_CLS__', _delta_cls)
-html = html.replace('__MALF_DELTA__', f'{_delta_sign} {abs(_malf_delta)}%')
+# __MALF_VAL__, __MALF_DELTA_CLS__, __MALF_DELTA__ placeholders removed (not in template)
 
 # ── Write output ──────────────────────────────────────────────────────────────
 out_path = os.path.join(BASE_DIR, 'dashboard.html')
