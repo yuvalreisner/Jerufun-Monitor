@@ -174,17 +174,21 @@ if not _rides_30d.empty:
     # number of distinct dates each hour-of-day appears → true average
     _days_per_hod = _rides_30d.groupby('hour_of_day')['hour'].count()
     _avg_by_hod = (_by_hod / _days_per_hod).round(1)
-    _top2 = _avg_by_hod.nlargest(2)
-    _peak_hod  = int(_top2.index[0])
-    _peak_avg  = float(_top2.iloc[0])
-    _peak2_hod = int(_top2.index[1]) if len(_top2) > 1 else (_peak_hod + 1) % 24
-    _peak2_avg = float(_top2.iloc[1]) if len(_top2) > 1 else 0.0
+    _top3 = _avg_by_hod.nlargest(3)
+    _peak_hod  = int(_top3.index[0])
+    _peak_avg  = float(_top3.iloc[0])
+    _peak2_hod = int(_top3.index[1]) if len(_top3) > 1 else (_peak_hod + 1) % 24
+    _peak2_avg = float(_top3.iloc[1]) if len(_top3) > 1 else 0.0
+    _peak3_hod = int(_top3.index[2]) if len(_top3) > 2 else (_peak_hod + 2) % 24
+    _peak3_avg = float(_top3.iloc[2]) if len(_top3) > 2 else 0.0
 else:
-    _peak_hod, _peak_avg, _peak2_hod, _peak2_avg = 8, 0.0, 17, 0.0
+    _peak_hod, _peak_avg, _peak2_hod, _peak2_avg, _peak3_hod, _peak3_avg = 8, 0.0, 17, 0.0, 12, 0.0
 peak_hour_str   = f'{_peak_hod:02d}:00'
 peak_hour_avg   = round(_peak_avg, 1)
 peak_hour2_str  = f'{_peak2_hod:02d}:00'
 peak_hour2_avg  = round(_peak2_avg, 1)
+peak_hour3_str  = f'{_peak3_hod:02d}:00'
+peak_hour3_avg  = round(_peak3_avg, 1)
 rhr_labels    = [h[11:13] + ':00' for h in hourly_rides_df['hour']]
 rhr_datetimes = [_dt_label(h) for h in hourly_rides_df['hour']]
 rhr_a = [int(v) for v in hourly_rides_df['reg']]
@@ -612,7 +616,7 @@ else:
     _i5 = _insight_card('⚡', 'אחוז הנסיעות החשמליות השבוע', '—', 'אין נתונים')
 
 # Insight 6: peak hour (already computed)
-_i6 = _insight_card('🕐', 'שעות השיא של הרשת', f'{peak_hour_str}  ·  {peak_hour2_str}', f'ממוצע {peak_hour_avg:g} ו-{peak_hour2_avg:g} נסיעות בשעה · 30 ימים אחרונים')
+_i6 = _insight_card('🕐', 'שעות השיא של הרשת', f'{peak_hour_str}  ·  {peak_hour2_str}  ·  {peak_hour3_str}', f'ממוצע {peak_hour_avg:g} · {peak_hour2_avg:g} · {peak_hour3_avg:g} נסיעות בשעה · 30 ימים אחרונים')
 
 insights_html = _i1 + _i2 + _i6 + _i3 + _i5
 
