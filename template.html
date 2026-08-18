@@ -1843,6 +1843,9 @@
       var rect = tooltip.getBoundingClientRect();
       if (x + rect.width > window.innerWidth - 10) x = evt.clientX - rect.width - pad;
       if (y + rect.height > window.innerHeight - 10) y = evt.clientY - rect.height - pad;
+      // clamp to viewport edges
+      x = Math.max(8, Math.min(x, window.innerWidth  - rect.width  - 8));
+      y = Math.max(8, Math.min(y, window.innerHeight - rect.height - 8));
       tooltip.style.left = x + 'px';
       tooltip.style.top = y + 'px';
     }
