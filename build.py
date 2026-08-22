@@ -239,8 +239,29 @@ weekly_rides_df = pd.read_sql_query(f"""
     FROM ordered WHERE prev_ts IS NOT NULL
     GROUP BY station_name
 """, conn)
+rides_24h_df = pd.read_sql_query(f"""
+    WITH ordered AS (
+        SELECT station_name, ts, bikes_electric, bikes_regular,
+               LAG(bikes_electric) OVER (PARTITION BY station_name ORDER BY ts) AS prev_elec,
+               LAG(bikes_regular)  OVER (PARTITION BY station_name ORDER BY ts) AS prev_reg,
+               LAG(ts)             OVER (PARTITION BY station_name ORDER BY ts) AS prev_ts
+        FROM snapshots
+        WHERE station_name NOT IN ({_BL_SQL})
+          AND ts >= datetime('now', '-1 days')
+    )
+    SELECT station_name,
+        SUM(CASE WHEN (julianday(ts)-julianday(prev_ts))*24 <= 2
+                      AND bikes_electric < prev_elec AND (prev_elec - bikes_electric) <= 5
+                 THEN prev_elec - bikes_electric ELSE 0 END) AS elec_24h,
+        SUM(CASE WHEN (julianday(ts)-julianday(prev_ts))*24 <= 2
+                      AND bikes_regular < prev_reg  AND (prev_reg  - bikes_regular)  <= 5
+                 THEN prev_reg  - bikes_regular  ELSE 0 END) AS reg_24h
+    FROM ordered WHERE prev_ts IS NOT NULL
+    GROUP BY station_name
+""", conn)
 conn.close()
 weekly_rides_df['weekly_total'] = weekly_rides_df['weekly_elec'] + weekly_rides_df['weekly_reg']
+rides_24h_df['rides_24h'] = rides_24h_df['elec_24h'] + rides_24h_df['reg_24h']
 
 # Network summary for avg/median chart
 net = get_daily_network_summary()
@@ -567,25 +588,25 @@ else:
     _i2 = _insight_card('🏆', 'התחנה עם הכי הרבה נסיעות השבוע', '—', 'אין נתונים')
 
 # Insight 3: allocation efficiency (over-allocated → under-allocated)
-_eff = weekly_rides_df.merge(snap[['station_name','bikes_available']], on='station_name', how='inner')
+_eff = rides_24h_df.merge(snap[['station_name','bikes_available']], on='station_name', how='inner')
 _eff = _eff[_eff['bikes_available'] >= 3].copy()
-_eff['efficiency'] = _eff['weekly_total'] / _eff['bikes_available'].clip(lower=1)
+_eff['efficiency'] = _eff['rides_24h'] / _eff['bikes_available'].clip(lower=1)
 _over  = _eff[_eff['bikes_available'] >= 5].sort_values(['efficiency','bikes_available'], ascending=[True,False]).head(1)
-_under = _eff[_eff['weekly_total'] >= 5].sort_values('efficiency', ascending=False).head(1)
+_under = _eff[_eff['rides_24h'] >= 1].sort_values('efficiency', ascending=False).head(1)
 if not _over.empty and not _under.empty and _over.iloc[0]['station_name'] != _under.iloc[0]['station_name']:
     _ov_name = _over.iloc[0]['station_name']
     _un_name = _under.iloc[0]['station_name']
     _ov_bikes = int(_over.iloc[0]['bikes_available'])
-    _ov_rides = int(_over.iloc[0]['weekly_total'])
+    _ov_rides = int(_over.iloc[0]['rides_24h'])
     _un_bikes = int(_under.iloc[0]['bikes_available'])
-    _un_rides = int(_under.iloc[0]['weekly_total'])
+    _un_rides = int(_under.iloc[0]['rides_24h'])
     _i3_popup = (
         '<div class="alloc-tip-popup">'
         '<div class="alloc-tip-title">כיצד מחושבת המלצת השינוע?</div>'
         '<div class="alloc-tip-fraction">'
-        '<span class="alloc-tip-num">סך נסיעות שבועיות</span>'
+        '<span class="alloc-tip-num">נסיעות ב-24 השעות האחרונות</span>'
         '<hr class="alloc-tip-hr">'
-        '<span class="alloc-tip-den">ממוצע אופניים זמינים (7 ימים)</span>'
+        '<span class="alloc-tip-den">אופניים זמינים כרגע בתחנה</span>'
         '</div>'
         '<div class="alloc-tip-rules">'
         '<div>ציון נמוך ⟵ אופניים רבים, נסיעות מעטות</div>'
